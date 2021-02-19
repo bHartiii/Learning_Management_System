@@ -1,18 +1,22 @@
+from django.contrib.sites.shortcuts import get_current_site
 from django.db import IntegrityError
 from rest_framework import authentication, status, generics, viewsets
 from rest_framework.response import Response
 
+from Auth.JWTAuthentication import JWTAuth
 from Auth.models import User
 from .models import Course, Mentor, StudentCourseMentor, Student, Education, Performance
 from django.utils.decorators import method_decorator
 from rest_framework.generics import GenericAPIView
 from rest_framework.permissions import AllowAny
-from .serializers import CourseSerializer, CourseMentorSerializer, UserSerializer,\
-    StudentCourseMentorSerializer, StudentCourseMentorReadSerializer, StudentCourseMentorUpdateSerializer,\
-    StudentSerializer, StudentBasicSerializer, StudentDetailsSerializer, EducationSerializer, CourseMentorSerializerDetails, \
-    NewStudentsSerializer, PerformanceSerializer, EducationUpdateSerializer, ExcelDataSerializer, PerformanceUpdateViaExcelSerializer, \
-    AddMentorSerializer,MentorDetailSerializer,MentorCourseSerializer,AddStudentSerializer, \
-        StudentProfileDetails, User, CourseMentorSerializers, EducationSerializer1, MentorStudentCourseSerializer
+from .serializers import CourseSerializer, CourseMentorSerializer, UserSerializer, \
+    StudentCourseMentorSerializer, StudentCourseMentorReadSerializer, StudentCourseMentorUpdateSerializer, \
+    StudentSerializer, StudentBasicSerializer, StudentDetailsSerializer, EducationSerializer, \
+    CourseMentorSerializerDetails, \
+    NewStudentsSerializer, PerformanceSerializer, EducationUpdateSerializer, ExcelDataSerializer, \
+    PerformanceUpdateViaExcelSerializer, \
+    AddMentorSerializer, MentorDetailSerializer, MentorCourseSerializer, AddStudentSerializer, \
+    StudentProfileDetails, User, CourseMentorSerializers, EducationSerializer1, MentorStudentCourseSerializer
 import pandas
 from .utils import ExcelHeader, ValueRange, Pattern, Configure
 from .excel_validator import ExcelException, ExcelValidator
@@ -29,6 +33,7 @@ import datetime
 from Auth.models import User
 from Management.serializers import CourseMentorSerializers, EducationSerializer1, MentorStudentCourseSerializer, \
     StudentProfileDetails
+from Auth.tasks import send_registration_mail
 
 
 @method_decorator(TokenAuthentication, name='dispatch')
@@ -638,15 +643,26 @@ class AddMentorAPIView(GenericAPIView):
         try:
             serializer = self.serializer_class(data=request.data)
             serializer.is_valid()
+            username = serializer.data.get('username')
             name = serializer.data.get('name')
             email = serializer.data.get('email')
             mobile = serializer.data.get('mobile')
             first_name = GetFirstNameAndLastName.get_first_name(name)
             last_name = GetFirstNameAndLastName.get_last_name(name)
             password = GeneratePassword.generate_password(self)
-            user = User.objects.create(username=email, first_name=first_name, last_name=last_name, email=email,
+            user = User.objects.create(username=username, first_name=first_name, last_name=last_name, email=email,
                                        password=password, mobile=mobile, role='Mentor')
             mentor = Mentor.objects.get(mentor=user)
+            data = {
+                'name': user.get_full_name(),
+                'username': user.username,
+                'password': password,
+                'role': user.role,
+                'email': user.email,
+                'site': get_current_site(request).domain,
+                'token': JWTAuth.getToken(username=user.username, password=user.password)
+            }
+            send_registration_mail.delay(data)
             courses = serializer.data['mentor'].get('course')
             for course_id in courses:
                 for mentor_course in mentor.course.all():
@@ -657,7 +673,9 @@ class AddMentorAPIView(GenericAPIView):
                 mentor.course.add(course_id)
                 mentor.save()
             log.info('New Mentor is added')
-            return Response({'response': f"{mentor} has been added as a Mentor"}, status=status.HTTP_200_OK)
+            return Response(
+                {'response': f"{mentor} has been added as a Mentor", 'username': username, 'password': password,
+                 'token': data['token']}, status=status.HTTP_200_OK)
         except Exception as e:
             log.error(e)
             return Response({'response': 'Something went wrong'}, status=status.HTTP_400_BAD_REQUEST)
@@ -670,11 +688,16 @@ class GetMentorDetailsAPIView(GenericAPIView):
     permission_classes = [isMentorOrAdmin]
 
     def get_student_count_in_course_list(self, mentor):
+        """
+        This function is used for fetching the mentors details
+        :param mentor:
+        :return:
+        """
         courses = mentor.course.all()
         course_list = []
         for course in courses:
             student = StudentCourseMentor.objects.filter(mentor=mentor, course=course).count()
-            course_list.append({"course_name": str(course), "student_count":student})
+            course_list.append({"course_name": str(course), "student_count": student})
         return course_list
 
     def get(self, request):
@@ -693,7 +716,7 @@ class GetMentorDetailsAPIView(GenericAPIView):
                     for mentor in mentors:
                         serializer = dict(self.serializer_class(mentor).data)
                         course_list = self.get_student_count_in_course_list(mentor)
-                        serializer.update({"course":course_list})
+                        serializer.update({"course": course_list})
                         mentor_list.append(serializer)
                     log.info("Mentors retrieved")
                     return Response({'response': mentor_list}, status=status.HTTP_200_OK)
@@ -701,13 +724,12 @@ class GetMentorDetailsAPIView(GenericAPIView):
                 mentor = Mentor.objects.get(mentor=request.META['user'])
                 serializer = dict(self.serializer_class(mentor).data)
                 course_list = self.get_student_count_in_course_list(mentor)
-                serializer.update({"course":course_list})
+                serializer.update({"course": course_list})
                 log.info("Mentor details retrieved")
                 return Response({'response': serializer}, status=status.HTTP_200_OK)
         except Exception as e:
             log.error(e)
             return Response({'response': 'Something went wrong'}, status=status.HTTP_403_FORBIDDEN)
-
 
 
 @method_decorator(TokenAuthentication, name='dispatch')
@@ -774,16 +796,16 @@ class Studentprofile(GenericAPIView):
                 student = self.queryset.get(id=student_id)
             serializer = dict(self.serializer_class(student).data)
             userSerializer = UserSerializer(student.student).data
-            serializer.update({'USER_DATA':userSerializer})
+            serializer.update({'USER_DATA': userSerializer})
 
             EducationDetails = EducationSerializer1(student.student).data
             serializer.update({'Education_Details': EducationDetails})
             student = StudentCourseMentor.objects.get(student_id=student.id)
             studentCourseSerializer = CourseMentorSerializers(student).data
-            serializer.update({'Mentor&Course':studentCourseSerializer})
+            serializer.update({'Mentor&Course': studentCourseSerializer})
             log.info(f"Data accessed by {request.META['user'].role}")
             return Response({'response': serializer}, status=status.HTTP_200_OK)
-        except (Student.DoesNotExist,StudentCourseMentor.DoesNotExist):
+        except (Student.DoesNotExist, StudentCourseMentor.DoesNotExist):
             log.info('Record not found')
             return Response({'response': 'Record not found'}, status=status.HTTP_404_NOT_FOUND)
 
@@ -814,4 +836,3 @@ class MentorStudentCourse(GenericAPIView):
         except Exception as e:
             log.error(e, "from get_MentorStudentCourse()")
             return Response("Something went wrong", status=status.HTTP_400_BAD_REQUEST)
-
