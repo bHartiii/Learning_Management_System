@@ -1,11 +1,15 @@
 from rest_framework import serializers
-from .models import User
+from .models import *
 from .permissions import Role
 import sys
 
 sys.path.append("..")
 from Management.utils import Pattern
 
+class RoleSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Roles
+        fields = ['role']
 
 class UserSerializer(serializers.ModelSerializer):
     """This Serializer is used to serialize user registration data
@@ -14,7 +18,7 @@ class UserSerializer(serializers.ModelSerializer):
     first_name = serializers.RegexField(Pattern.NAME_PATTERN.value)
     last_name = serializers.RegexField(Pattern.NAME_PATTERN.value)
     mobile = serializers.RegexField(Pattern.MOBILE_PATTERN.value)
-    role = serializers.ChoiceField([Role.ADMIN.value, Role.STUDENT.value, Role.MENTOR.value])
+   # role = serializers.ChoiceField([Role.ADMIN.value, Role.STUDENT.value, Role.MENTOR.value])
 
     class Meta:
         model = User
@@ -38,7 +42,7 @@ class UserLoginSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ['username', 'password']
-        extra_kwargs = {'role':{'read_only':True}}
+       # extra_kwargs = {'role':{'read_only':True}}
 
 
 class ChangeUserPasswordSerializer(serializers.Serializer):
