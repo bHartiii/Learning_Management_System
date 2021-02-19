@@ -1,8 +1,8 @@
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.generics import GenericAPIView
-from .serializers import UserSerializer, UserLoginSerializer, ChangeUserPasswordSerializer, \
-    ForgotPasswordSerializer, ResetPasswordSerializer
+from .serializer import UserSerializer, UserLoginSerializer, ChangeUserPasswordSerializer, \
+    ForgotPasswordSerializer, ResetPasswordSerializer, RoleSerializer
 from .permissions import isAdmin
 from django.contrib.sites.shortcuts import get_current_site
 from django.contrib.auth import authenticate, login, logout
@@ -25,6 +25,21 @@ import datetime
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 
+class AddRoleAPIView(GenericAPIView):
+    serializer_class = RoleSerializer
+    #permission_classes = [isAdmin]
+
+    def post(self, request):
+        """This API is used to add course by the admin
+        @param request: course_name
+        @return: save course in the database
+        """
+        serializer = self.serializer_class(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        log.info('Role is added')
+        return Response({'response': f"{serializer.data.get('role')} role is added"},
+                        status=status.HTTP_201_CREATED)
 
 @method_decorator(TokenAuthentication, name='dispatch')
 class UserRegistrationView(GenericAPIView):
