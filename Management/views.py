@@ -7,15 +7,12 @@ from .models import Course, Mentor, StudentCourseMentor, Student, Education, Per
 from django.utils.decorators import method_decorator
 from rest_framework.generics import GenericAPIView
 from rest_framework.permissions import AllowAny
-from .serializers import CourseSerializer, CourseMentorSerializer, MentorSerializer, UserSerializer, \
-    StudentCourseMentorSerializer, StudentCourseMentorReadSerializer, StudentCourseMentorUpdateSerializer, \
-    StudentSerializer, StudentBasicSerializer, StudentDetailsSerializer, EducationSerializer, \
-    CourseMentorSerializerDetails, \
-    NewStudentsSerializer, PerformanceSerializer, EducationUpdateSerializer, ExcelDataSerializer, \
-    PerformanceUpdateViaExcelSerializer, \
-    AddMentorSerializer, MentorDetailSerializer, MentorCourseSerializer, AddStudentSerializer, \
-    StudentProfileDetails, User, CourseMentorSerializers, EducationSerializer1, MentorStudentCourseSerializer
-
+from .serializers import CourseSerializer, CourseMentorSerializer, UserSerializer,\
+    StudentCourseMentorSerializer, StudentCourseMentorReadSerializer, StudentCourseMentorUpdateSerializer,\
+    StudentSerializer, StudentBasicSerializer, StudentDetailsSerializer, EducationSerializer, CourseMentorSerializerDetails, \
+    NewStudentsSerializer, PerformanceSerializer, EducationUpdateSerializer, ExcelDataSerializer, PerformanceUpdateViaExcelSerializer, \
+    AddMentorSerializer,MentorDetailSerializer,MentorCourseSerializer,AddStudentSerializer, \
+        StudentProfileDetails, User, CourseMentorSerializers, EducationSerializer1, MentorStudentCourseSerializer
 import pandas
 from .utils import ExcelHeader, ValueRange, Pattern, Configure
 from .excel_validator import ExcelException, ExcelValidator
@@ -162,24 +159,9 @@ class DeleteCourseFromMentorListAPIView(GenericAPIView):
 
 
 @method_decorator(TokenAuthentication, name='dispatch')
-class AllMentorDetailsAPIView(GenericAPIView):
-    serializer_class = MentorSerializer
-    permission_classes = [isAdmin]
-    queryset = Mentor.objects.all()
-
-    def get(self, request):
-        serializer = self.serializer_class(self.queryset.all(), many=True)
-        if len(serializer.data) == 0:
-            log.info("Mentors list empty")
-            return Response({'response': 'No records found'}, status=status.HTTP_404_NOT_FOUND)
-        log.info("Mentors retrieved")
-        return Response({'response': serializer.data}, status=status.HTTP_200_OK)
-
-
-@method_decorator(TokenAuthentication, name='dispatch')
 class MentorDetailsAPIView(GenericAPIView):
-    serializer_class = MentorSerializer
-    permission_classes = [isMentorOrAdmin]
+    serializer_class = MentorCourseSerializer
+    permission_classes = [isAdmin]
 
     def get(self, request, mentor_id):
         """
@@ -188,11 +170,8 @@ class MentorDetailsAPIView(GenericAPIView):
             @param mentor_id: mentor primary key @return: Specific Mentor Profile
         """
         try:
-            if request.META['user'].role == Role.MENTOR.value:
-                mentor = Mentor.objects.get(mentor_id=request.META['user'].id)
-            else:
-                mentor = Mentor.objects.get(mentor_id=mentor_id)
-            mentorSerializerDict = dict(MentorSerializer(mentor).data)
+            mentor = Mentor.objects.get(mentor_id=mentor_id)
+            mentorSerializerDict = dict(MentorCourseSerializer(mentor).data)
             userSerializer = UserSerializer(mentor.mentor)
             mentorSerializerDict.update(userSerializer.data)
             log.info("Mentor profile fected.")
@@ -286,7 +265,7 @@ class StudentCourseMentorUpdateAPIView(GenericAPIView):
 
 @method_decorator(TokenAuthentication, name='dispatch')
 class GetMentorsForSpecificCourse(GenericAPIView):
-    serializer_class = MentorSerializer
+    serializer_class = MentorCourseSerializer
     permission_classes = [isAdmin]
 
     def get(self, request, course_id):
@@ -659,10 +638,10 @@ class AddMentorAPIView(GenericAPIView):
         try:
             serializer = self.serializer_class(data=request.data)
             serializer.is_valid()
-            name = serializer.validated_data['name']
-            email = serializer.validated_data['email']
-            mobile = serializer.validated_data['mobile']
-            first_name = GetFirstNameAndLastName.get_first_anme(name)
+            name = serializer.data.get('name')
+            email = serializer.data.get('email')
+            mobile = serializer.data.get('mobile')
+            first_name = GetFirstNameAndLastName.get_first_name(name)
             last_name = GetFirstNameAndLastName.get_last_name(name)
             password = GeneratePassword.generate_password(self)
             user = User.objects.create(username=email, first_name=first_name, last_name=last_name, email=email,
@@ -678,7 +657,7 @@ class AddMentorAPIView(GenericAPIView):
                 mentor.course.add(course_id)
                 mentor.save()
             log.info('New Mentor is added')
-            return Response({'response': f"{mentor} you are added as a Mentor"}, status=status.HTTP_200_OK)
+            return Response({'response': f"{mentor} has been added as a Mentor"}, status=status.HTTP_200_OK)
         except Exception as e:
             log.error(e)
             return Response({'response': 'Something went wrong'}, status=status.HTTP_400_BAD_REQUEST)
@@ -688,8 +667,15 @@ class AddMentorAPIView(GenericAPIView):
 class GetMentorDetailsAPIView(GenericAPIView):
     """ This API used for fetching mentor details"""
     serializer_class = MentorCourseSerializer
-    permission_classes = [isAdmin]
-    queryset = Mentor.objects.all()
+    permission_classes = [isMentorOrAdmin]
+
+    def get_student_count_in_course_list(self, mentor):
+        courses = mentor.course.all()
+        course_list = []
+        for course in courses:
+            student = StudentCourseMentor.objects.filter(mentor=mentor, course=course).count()
+            course_list.append({"course_name": str(course), "student_count":student})
+        return course_list
 
     def get(self, request):
         """
@@ -697,12 +683,27 @@ class GetMentorDetailsAPIView(GenericAPIView):
         :return: mentor details
         """
         try:
-            serializer = self.serializer_class(self.queryset.all(), many=True)
-            if len(serializer.data) == 0:
-                log.info("Mentors list empty")
-                return Response({'response': 'No records found'}, status=status.HTTP_404_NOT_FOUND)
-            log.info("Mentors retrieved")
-            return Response({'response': serializer.data}, status=status.HTTP_200_OK)
+            if request.META['user'].role == Role.ADMIN.value:
+                mentors = Mentor.objects.all()
+                if len(mentors) == 0:
+                    log.info("Mentors list empty")
+                    return Response({'response': 'No records found'}, status=status.HTTP_404_NOT_FOUND)
+                else:
+                    mentor_list = []
+                    for mentor in mentors:
+                        serializer = dict(self.serializer_class(mentor).data)
+                        course_list = self.get_student_count_in_course_list(mentor)
+                        serializer.update({"course":course_list})
+                        mentor_list.append(serializer)
+                    log.info("Mentors retrieved")
+                    return Response({'response': mentor_list}, status=status.HTTP_200_OK)
+            elif request.META['user'].role == Role.MENTOR.value:
+                mentor = Mentor.objects.get(mentor=request.META['user'])
+                serializer = dict(self.serializer_class(mentor).data)
+                course_list = self.get_student_count_in_course_list(mentor)
+                serializer.update({"course":course_list})
+                log.info("Mentor details retrieved")
+                return Response({'response': serializer}, status=status.HTTP_200_OK)
         except Exception as e:
             log.error(e)
             return Response({'response': 'Something went wrong'}, status=status.HTTP_403_FORBIDDEN)
@@ -724,7 +725,7 @@ class AddStudent(GenericAPIView):
             name = serializer.validated_data['name']
             email = serializer.validated_data['email']
             mobile = serializer.validated_data['mobile']
-            first_name = GetFirstNameAndLastName.get_first_anme(name)
+            first_name = GetFirstNameAndLastName.get_first_name(name)
             last_name = GetFirstNameAndLastName.get_last_name(name)
             password = GeneratePassword.generate_password(self)
             student = serializer.validated_data['student']
