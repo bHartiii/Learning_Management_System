@@ -1,7 +1,7 @@
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.generics import GenericAPIView
-from .serializer import UserSerializer, UserLoginSerializer, ChangeUserPasswordSerializer, \
+from .serializers import UserSerializer, UserLoginSerializer, ChangeUserPasswordSerializer, \
     ForgotPasswordSerializer, ResetPasswordSerializer, RoleSerializer
 from .permissions import isAdmin
 from django.contrib.sites.shortcuts import get_current_site
@@ -10,8 +10,9 @@ from .JWTAuthentication import JWTAuth
 from django.utils.decorators import method_decorator
 from .middlewares import TokenAuthentication, TokenAuthenticationOnFirstAccess, CantAccessAfterLogin
 from django.contrib.auth.hashers import check_password
-from .models import User, TokenBlackList
+from .models import User, TokenBlackList, Roles
 import random
+from django.db import IntegrityError
 from django.urls import reverse
 from .tasks import send_registration_mail, send_password_reset_mail
 import sys
@@ -25,21 +26,48 @@ import datetime
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 
+
 class AddRoleAPIView(GenericAPIView):
+    """ This API is used for adding role """
     serializer_class = RoleSerializer
-    #permission_classes = [isAdmin]
+    queryset = Roles.objects.all()
+    permission_classes = [isAdmin]
+
+    def get(self, request):
+        """
+        This function is used for fetching all the roles
+        :return: roles
+        """
+        try:
+            roles = Roles.objects.all()
+            serializer = self.serializer_class(roles, many=True)
+            log.info("Roles are retrieved")
+            return Response({'response': serializer.data}, status=status.HTTP_200_OK)
+        except Exception as e:
+            log.error(e)
+            return Response({'response': 'Something went wrong'})
 
     def post(self, request):
-        """This API is used to add course by the admin
-        @param request: course_name
-        @return: save course in the database
+        """This API is used to add role by the admin
+        @param request: role_name,role_id
+        @return: save role in the database
         """
-        serializer = self.serializer_class(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        log.info('Role is added')
-        return Response({'response': f"{serializer.data.get('role')} role is added"},
-                        status=status.HTTP_201_CREATED)
+        try:
+            serializer = self.serializer_class(data=request.data)
+            serializer.is_valid(raise_exception=True)
+            try:
+                serializer.save()
+            except IntegrityError as e:
+                log.error(e)
+                return Response({'response': f"{serializer.data.get('role')} role is already present"},
+                                status=status.HTTP_400_BAD_REQUEST)
+            log.info('Role is added')
+            return Response({'response': f"{serializer.data.get('role')} role is added"},
+                            status=status.HTTP_201_CREATED)
+        except Exception as e:
+            log.error(e)
+            return Response({'response': 'Something went wrong'})
+
 
 @method_decorator(TokenAuthentication, name='dispatch')
 class UserRegistrationView(GenericAPIView):
@@ -65,7 +93,8 @@ class UserRegistrationView(GenericAPIView):
         last_name = serializer.data.get('last_name')
         email = serializer.data.get('email')
         mobile = serializer.data.get('mobile')
-        role = serializer.data.get('role')
+        roles = serializer.data.get('role')
+        role = Roles.objects.get(role_id=roles)
         password = GeneratePassword.generate_password(self)
         user = User.objects.create_user(username=username, first_name=first_name, last_name=last_name,
                                         email=email, mobile=mobile, role=role, password=password)
@@ -73,7 +102,6 @@ class UserRegistrationView(GenericAPIView):
             'name': user.get_full_name(),
             'username': user.username,
             'password': password,
-            'role': user.role,
             'email': user.email,
             'site': get_current_site(request).domain,
             'token': JWTAuth.getToken(username=user.username, password=user.password)
@@ -81,7 +109,7 @@ class UserRegistrationView(GenericAPIView):
         send_registration_mail.delay(data)
         log.info(f"Registration is done and mail is sent to {request.data['email']}")
         return Response(
-            {'response': f"A new {request.data['role']} is added", 'username': username, 'password': password,
+            {'response': f"A new user registered successfully", 'username': username, 'password': password,
              'token': data['token']}, status=status.HTTP_201_CREATED)
 
 
@@ -120,18 +148,18 @@ class UserLoginView(GenericAPIView):
         password = serializer.data.get('password')
         user = authenticate(request, username=username, password=password)
         if user:
-            role = user.role
+            # role = user.role
             if user.last_login == None and user.is_superuser == False:
                 token = request.GET.get('token')
                 if JWTAuth.verifyToken(token):
                     log.info('login successful but need to change password')
                     response = Response(
                         {'response': 'You are logged in! Now you need to change password to access resources',
-                         'role': role,
+
                          'link': reverse('change-password-on-first-access',
                                          args=[token])}, status=status.HTTP_200_OK)
                     response['Authorization'] = JWTAuth.getToken(username=username, password=password)
-                    
+
                     return response
                 log.info('Need to use the link shared in mail')
                 return Response({'response': 'You need to use the link shared in your mail for the first time'},
@@ -140,7 +168,7 @@ class UserLoginView(GenericAPIView):
             user.last_login = str(datetime.datetime.now())
             user.save()
             log.info('successful login')
-            response = Response({'response': f'You are logged in successfully', 'username': username, 'role': role},
+            response = Response({'response': f'You are logged in successfully', 'username': username},
                                 status=status.HTTP_200_OK)
             jwt_token = JWTAuth.getToken(username=username, password=password)
             response['Authorization'] = jwt_token
@@ -161,7 +189,7 @@ class UserLogoutView(GenericAPIView):
         cache = Cache.getCacheInstance()
         user = request.META.get('user')
         if user:
-            cache.delete(user.username)     # deleting redis cache
+            cache.delete(user.username)  # deleting redis cache
         log.info('logout successful')
         return Response({'response': 'You are logged out'}, status=status.HTTP_200_OK)
 
