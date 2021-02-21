@@ -6,10 +6,13 @@ import sys
 sys.path.append("..")
 from Management.utils import Pattern
 
+
 class RoleSerializer(serializers.ModelSerializer):
+    """ This is the add role serializer"""
     class Meta:
         model = Roles
-        fields = ['role']
+        fields = ['role_id', 'role']
+
 
 class UserSerializer(serializers.ModelSerializer):
     """This Serializer is used to serialize user registration data
@@ -18,7 +21,8 @@ class UserSerializer(serializers.ModelSerializer):
     first_name = serializers.RegexField(Pattern.NAME_PATTERN.value)
     last_name = serializers.RegexField(Pattern.NAME_PATTERN.value)
     mobile = serializers.RegexField(Pattern.MOBILE_PATTERN.value)
-   # role = serializers.ChoiceField([Role.ADMIN.value, Role.STUDENT.value, Role.MENTOR.value])
+
+    # role = serializers.ChoiceField([Role.ADMIN.value, Role.STUDENT.value, Role.MENTOR.value])
 
     class Meta:
         model = User
@@ -39,10 +43,11 @@ class UserLoginSerializer(serializers.ModelSerializer):
     """
     username = serializers.CharField(max_length=20, min_length=3, required=True)
     password = serializers.CharField(max_length=20, min_length=6, required=True)
+
     class Meta:
         model = User
         fields = ['username', 'password']
-       # extra_kwargs = {'role':{'read_only':True}}
+    # extra_kwargs = {'role':{'read_only':True}}
 
 
 class ChangeUserPasswordSerializer(serializers.Serializer):
