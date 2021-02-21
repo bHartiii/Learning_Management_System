@@ -9,14 +9,7 @@ from .models import Course, Mentor, StudentCourseMentor, Student, Education, Per
 from django.utils.decorators import method_decorator
 from rest_framework.generics import GenericAPIView
 from rest_framework.permissions import AllowAny
-from .serializers import CourseSerializer, CourseMentorSerializer, UserSerializer, \
-    StudentCourseMentorSerializer, StudentCourseMentorReadSerializer, StudentCourseMentorUpdateSerializer, \
-    StudentSerializer, StudentBasicSerializer, StudentDetailsSerializer, EducationSerializer, \
-    CourseMentorSerializerDetails, \
-    NewStudentsSerializer, PerformanceSerializer, EducationUpdateSerializer, ExcelDataSerializer, \
-    PerformanceUpdateViaExcelSerializer, \
-    AddMentorSerializer, MentorDetailSerializer, MentorCourseSerializer, AddStudentSerializer, \
-    StudentProfileDetails, User, CourseMentorSerializers, EducationSerializer1, MentorStudentCourseSerializer
+from .serializers import *
 import pandas
 from .utils import ExcelHeader, ValueRange, Pattern, Configure
 from .excel_validator import ExcelException, ExcelValidator
@@ -31,10 +24,7 @@ from Auth.models import User
 from Management.utils import GeneratePassword, GetFirstNameAndLastName
 import datetime
 from Auth.models import User
-from Management.serializers import CourseMentorSerializers, EducationSerializer1, MentorStudentCourseSerializer, \
-    StudentProfileDetails
-from Auth.tasks import send_registration_mail
-
+from Management.serializers import *
 
 @method_decorator(TokenAuthentication, name='dispatch')
 class AddCourseAPIView(GenericAPIView):
@@ -643,7 +633,6 @@ class AddMentorAPIView(GenericAPIView):
         try:
             serializer = self.serializer_class(data=request.data)
             serializer.is_valid()
-            username = serializer.data.get('username')
             name = serializer.data.get('name')
             email = serializer.data.get('email')
             mobile = serializer.data.get('mobile')
@@ -673,9 +662,10 @@ class AddMentorAPIView(GenericAPIView):
                 mentor.course.add(course_id)
                 mentor.save()
             log.info('New Mentor is added')
-            return Response(
-                {'response': f"{mentor} has been added as a Mentor", 'username': username, 'password': password,
-                 'token': data['token']}, status=status.HTTP_200_OK)
+            return Response({'response': f"{mentor} you are added as a Mentor"}, status=status.HTTP_200_OK)
+        except IntegrityError as e:
+            log.error(e)
+            return Response({'response': 'Mentor already exist'}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
             log.error(e)
             return Response({'response': 'Something went wrong'}, status=status.HTTP_400_BAD_REQUEST)
