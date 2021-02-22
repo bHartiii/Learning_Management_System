@@ -100,12 +100,8 @@ class UserRegistrationView(GenericAPIView):
         send_registration_mail.delay(data)
         log.info(f"Registration is done and mail is sent to {request.data['email']}")
         return Response(
-<<<<<<< HEAD
             {'response': f"A new user registered successfully", 'username': username, 'password': password,
              'token': data['token']}, status=status.HTTP_201_CREATED)
-=======
-            {'response': f"A new {request.data['role']} is added", 'username': username, 'password': password}, status=status.HTTP_201_CREATED)
->>>>>>> 4d6846caaca025186faaf2075b2995d0f8f4d670
 
 
 @method_decorator(CantAccessAfterLogin, name='dispatch')
@@ -123,25 +119,6 @@ class UserLoginView(GenericAPIView):
         user = authenticate(request, username=username, password=password)
         if user:
             role = user.role
-<<<<<<< HEAD
-            if user.last_login == None and user.is_superuser == False:
-                token = request.GET.get('token')
-                if JWTAuth.verifyToken(token):
-                    log.info('login successful but need to change password')
-                    response = Response(
-                        {'response': 'You are logged in! Now you need to change password to access resources',
-
-                         'link': reverse('change-password-on-first-access',
-                                         args=[token])}, status=status.HTTP_200_OK)
-                    response['Authorization'] = JWTAuth.getToken(username=username, password=password)
-
-                    return response
-                log.info('Need to use the link shared in mail')
-                return Response({'response': 'You need to use the link shared in your mail for the first time'},
-                                status=status.HTTP_401_UNAUTHORIZED)
-
-=======
->>>>>>> 4d6846caaca025186faaf2075b2995d0f8f4d670
             user.last_login = str(datetime.datetime.now())
             user.save()
             log.info('successful login')
