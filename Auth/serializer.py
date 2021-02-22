@@ -1,6 +1,5 @@
 from rest_framework import serializers
 from .models import *
-from .permissions import Role
 import sys
 
 sys.path.append("..")
@@ -21,9 +20,6 @@ class UserSerializer(serializers.ModelSerializer):
     first_name = serializers.RegexField(Pattern.NAME_PATTERN.value)
     last_name = serializers.RegexField(Pattern.NAME_PATTERN.value)
     mobile = serializers.RegexField(Pattern.MOBILE_PATTERN.value)
-
-    # role = serializers.ChoiceField([Role.ADMIN.value, Role.STUDENT.value, Role.MENTOR.value])
-
     class Meta:
         model = User
         fields = ['username', 'first_name', 'last_name', 'email', 'mobile', 'role']
