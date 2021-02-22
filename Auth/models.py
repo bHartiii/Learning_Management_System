@@ -3,10 +3,12 @@ from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.utils.timezone import now
 
+
 class UserManager(BaseUserManager):
 
     def create_user(self, username, email, first_name, last_name, role, mobile, password):
         email = self.normalize_email(email)
+        print(role)
         user = self.model(username=username, email=email, first_name=first_name, last_name=last_name, role=role,
                           mobile=mobile,
                           password=password)
@@ -14,13 +16,15 @@ class UserManager(BaseUserManager):
         user.save()
         return user
 
-    def create_superuser(self, username, email, mobile, password):
-        user = self.create_user(username=username, email=email, mobile=mobile, role=Roles.user_role(),
+    def create_superuser(self, username, email, first_name, last_name, mobile, password):
+        user = self.create_user(username=username, email=email, first_name=first_name, last_name=last_name,
+                                mobile=mobile, role=Roles.user_role(),
                                 password=password)
         user.is_admin = True
         user.is_staff = True
         user.is_superuser = True
         user.is_active = True
+        user.set_password(password)
         user.save()
         return user
 
@@ -32,11 +36,14 @@ class Roles(models.Model):
     def __str__(self):
         return self.role
 
-    def user_role(self):
-        if not Roles.objects.filter(role='Admin'):
-            role = Roles(role_id=1, role='Admin')
+    @staticmethod
+    def user_role():
+        admin_role = Roles.objects.filter(role='admin')
+        if not admin_role:
+            role = Roles(role_id=1, role='admin')
             role.save()
-        return Roles.objects.filter(role='Admin')
+            return role
+        return admin_role
 
 
 class User(AbstractUser):
@@ -49,7 +56,7 @@ class User(AbstractUser):
     objects = UserManager()
 
     USERNAME_FIELD = 'username'
-    REQUIRED_FIELDS = ['mobile', 'email']
+    REQUIRED_FIELDS = ['mobile', 'email', 'first_name', 'last_name']
 
     def __str__(self):
         return self.get_full_name()
