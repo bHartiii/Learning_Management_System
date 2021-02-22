@@ -11,6 +11,7 @@ class RoleSerializer(serializers.ModelSerializer):
     class Meta:
         model = Roles
         fields = ['id', 'role']
+        extra_kwargs = {'id':{'read_only':True}}
 
 
 class UserSerializer(serializers.ModelSerializer):
