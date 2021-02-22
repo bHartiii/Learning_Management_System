@@ -1,7 +1,7 @@
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.generics import GenericAPIView
-from .serializers import UserSerializer, UserLoginSerializer, ChangeUserPasswordSerializer, \
+from .serializer import UserSerializer, UserLoginSerializer, ChangeUserPasswordSerializer, \
     ForgotPasswordSerializer, ResetPasswordSerializer, RoleSerializer
 from .permissions import isAdmin
 from django.contrib.sites.shortcuts import get_current_site
@@ -31,7 +31,6 @@ class AddRoleAPIView(GenericAPIView):
     """ This API is used for adding role """
     serializer_class = RoleSerializer
     queryset = Roles.objects.all()
-    permission_classes = [isAdmin]
 
     def get(self, request):
         """
@@ -148,7 +147,7 @@ class UserLoginView(GenericAPIView):
         password = serializer.data.get('password')
         user = authenticate(request, username=username, password=password)
         if user:
-            # role = user.role
+            role = user.role
             if user.last_login == None and user.is_superuser == False:
                 token = request.GET.get('token')
                 if JWTAuth.verifyToken(token):
@@ -168,8 +167,9 @@ class UserLoginView(GenericAPIView):
             user.last_login = str(datetime.datetime.now())
             user.save()
             log.info('successful login')
-            response = Response({'response': f'You are logged in successfully', 'username': username},
-                                status=status.HTTP_200_OK)
+            response = Response(
+                {'response': f'You are logged in successfully', 'username': username, 'role': role.role},
+                status=status.HTTP_200_OK)
             jwt_token = JWTAuth.getToken(username=username, password=password)
             response['Authorization'] = jwt_token
             # token is storing in redis cache
