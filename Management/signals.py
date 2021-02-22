@@ -12,9 +12,9 @@ from Auth.models import User, Roles
 @receiver(signal=post_save, sender=User)
 def create_student_or_mentor(sender, instance, created, **kwargs):
     if created:
-        if instance.role == Roles.objects.get(role='student'):
+        if instance.role == Roles.objects.filter(role='student'):
             Student.objects.create(student=instance)
-        elif instance.role == Roles.objects.get(role='mentor'):
+        elif instance.role == Roles.objects.filter(role='mentor'):
             Mentor.objects.create(mentor=instance)
 
 
