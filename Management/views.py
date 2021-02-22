@@ -4,19 +4,19 @@ from rest_framework import authentication, status, generics, viewsets
 from rest_framework.response import Response
 from Auth.tasks import send_registration_mail
 from Auth.JWTAuthentication import JWTAuth
-from Auth.models import User
+from Auth.models import User, Roles
 from .models import Course, Mentor, StudentCourseMentor, Student, Education, Performance
 from django.utils.decorators import method_decorator
 from rest_framework.generics import GenericAPIView
 from rest_framework.permissions import AllowAny
-from .serializers import *
+from .serializer import *
 import pandas
 from .utils import ExcelHeader, ValueRange, Pattern, Configure
 from .excel_validator import ExcelException, ExcelValidator
 import sys
 
 sys.path.append('..')
-from Auth.permissions import isAdmin, isMentorOrAdmin, OnlyStudent, Role
+from Auth.permissions import isAdmin, isMentorOrAdmin, OnlyStudent
 from Auth.middlewares import TokenAuthentication
 from LMS.loggerConfig import log
 import random
@@ -24,7 +24,8 @@ from Auth.models import User
 from Management.utils import GeneratePassword, GetFirstNameAndLastName
 import datetime
 from Auth.models import User
-from Management.serializers import *
+from Management.serializer import *
+
 
 @method_decorator(TokenAuthentication, name='dispatch')
 class AddCourseAPIView(GenericAPIView):
@@ -290,15 +291,15 @@ class StudentsAPIView(GenericAPIView):
         """Using this API Admin can see all course assigned students and mentor can see his course assigned students
          and student can see his own record
         """
-        if request.META['user'].role == Role.MENTOR.value:
+        if request.META['user'].role ==Roles.objects.get(role='mentor'):
             query = StudentCourseMentor.objects.filter(mentor=Mentor.objects.get(mentor_id=request.META['user']))
-        elif request.META['user'].role == Role.STUDENT.value:
+        elif request.META['user'].role == Roles.objects.get(role='student'):
             student = Student.objects.get(student_id=request.META['user'])
             query = StudentCourseMentor.objects.filter(student=student)
         else:
             query = self.queryset.all()
         if not query:
-            if request.META['user'].role == Role.STUDENT.value:
+            if request.META['user'].role == Roles.objects.get(role='student'):
                 student_serializer = StudentBasicSerializer(student)
                 return Response({'response': student_serializer.data}, status=status.HTTP_200_OK)
             log.info("Records not found")
@@ -319,9 +320,9 @@ class StudentDetailsAPIView(GenericAPIView):
         those student under him and student can see his own details
         """
         try:
-            if request.META['user'].role == Role.STUDENT.value:
+            if request.META['user'].role == Roles.objects.get(role='student'):
                 student = Student.objects.get(student_id=request.META['user'])
-            elif request.META['user'].role == Role.MENTOR.value:
+            elif request.META['user'].role == Roles.objects.get(role='mentor'):
                 student = StudentCourseMentor.objects.get(mentor=Mentor.objects.get(mentor_id=request.META['user']),
                                                           student_id=student_id).student
             else:
@@ -386,10 +387,10 @@ class EducationDetails(GenericAPIView):
         student can see his own details
         """
         try:
-            if request.META['user'].role == Role.STUDENT.value:
+            if request.META['user'].role == Roles.objects.get(role='student'):
                 student = Student.objects.get(student_id=request.META['user'].id)
                 query = self.queryset.filter(student_id=student.id)
-            elif request.META['user'].role == Role.MENTOR.value:
+            elif request.META['user'].role == Roles.objects.get(role='mentor'):
                 mentor = Mentor.objects.get(mentor_id=request.META['user'].id)
                 query = self.queryset.filter(mentor_id=mentor, student_id=student_id)
             else:
@@ -494,10 +495,10 @@ class StudentPerformance(GenericAPIView):
         @return: performace records of specific student
         """
         try:
-            if request.META['user'].role == Role.STUDENT.value:
+            if request.META['user'].role == Roles.objects.get(role='student'):
                 student = Student.objects.get(student_id=request.META['user'].id)
                 query = self.queryset.filter(student_id=student.id)
-            elif request.META['user'].role == Role.MENTOR.value:
+            elif request.META['user'].role == Roles.objects.get(role='mentor'):
                 mentor = Mentor.objects.get(mentor_id=request.META['user'].id)
                 query = self.queryset.filter(mentor_id=mentor.id, student_id=student_id)
             else:
@@ -526,7 +527,7 @@ class StudentPerfromanceUpdate(GenericAPIView):
         @return: updates score
         """
         try:
-            if request.META['user'].role == Role.MENTOR.value:
+            if request.META['user'].role == Roles.objects.get(role='mentor'):
                 mentor = Mentor.objects.get(mentor_id=request.META['user'].id)
                 student = self.queryset.get(mentor_id=mentor.id, student_id=student_id, week_no=week_no)
             else:
@@ -567,7 +568,7 @@ class UpdateScoreFromExcel(GenericAPIView):
                 error_message = {}
                 for row_no, row in enumerate(df.iterrows()):
                     try:
-                        if request.META.get('user').role == Role.MENTOR.value:
+                        if request.META.get('user').role == Roles.objects.get(role='mentor'):
                             mentor_id = request.META.get('user').mentor.id
                         else:
                             mentor_id = Mentor.objects.get(mid=row[1][-2]).id
@@ -696,7 +697,7 @@ class GetMentorDetailsAPIView(GenericAPIView):
         :return: mentor details
         """
         try:
-            if request.META['user'].role == Role.ADMIN.value:
+            if request.META['user'].role == Roles.objects.get(role='admin'):
                 mentors = Mentor.objects.all()
                 if len(mentors) == 0:
                     log.info("Mentors list empty")
@@ -710,7 +711,7 @@ class GetMentorDetailsAPIView(GenericAPIView):
                         mentor_list.append(serializer)
                     log.info("Mentors retrieved")
                     return Response({'response': mentor_list}, status=status.HTTP_200_OK)
-            elif request.META['user'].role == Role.MENTOR.value:
+            elif request.META['user'].role == Roles.objects.get(role='mentor'):
                 mentor = Mentor.objects.get(mentor=request.META['user'])
                 serializer = dict(self.serializer_class(mentor).data)
                 course_list = self.get_student_count_in_course_list(mentor)
@@ -792,9 +793,9 @@ class Studentprofile(GenericAPIView):
     def get(self, request, student_id):
 
         try:
-            if request.META['user'].role == Role.STUDENT.value:
+            if request.META['user'].role == Roles.objects.get(role='student'):
                 student = Student.objects.get(student_id=request.META['user'])
-            elif request.META['user'].role == Role.MENTOR.value:
+            elif request.META['user'].role == Roles.objects.get(role='mentor'):
                 student = StudentCourseMentor.objects.get(mentor=Mentor.objects.get(mentor_id=request.META['user']),
                                                           student_id=student_id).student
             else:
