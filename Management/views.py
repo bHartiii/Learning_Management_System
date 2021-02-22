@@ -656,8 +656,10 @@ class AddMentorAPIView(GenericAPIView):
             log.info('New Mentor is added')
             return Response({'response': f"{mentor} has been added as a Mentor"}, status=status.HTTP_200_OK)
         except IntegrityError as e:
+            log.error(e)
             return Response({'response':"Mentor already exists."}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
+            log.error(e)
             return Response({'response':'Something went wrong!!!'}, status=status.HTTP_400_BAD_REQUEST)
 
 
