@@ -2,7 +2,7 @@ from django.contrib.sites.shortcuts import get_current_site
 from django.db import IntegrityError
 from rest_framework import authentication, status, generics, viewsets
 from rest_framework.response import Response
-
+from Auth.tasks import send_registration_mail
 from Auth.JWTAuthentication import JWTAuth
 from Auth.models import User
 from .models import Course, Mentor, StudentCourseMentor, Student, Education, Performance
@@ -639,7 +639,7 @@ class AddMentorAPIView(GenericAPIView):
             first_name = GetFirstNameAndLastName.get_first_name(name)
             last_name = GetFirstNameAndLastName.get_last_name(name)
             password = GeneratePassword.generate_password(self)
-            user = User.objects.create(username=username, first_name=first_name, last_name=last_name, email=email,
+            user = User.objects.create(username=email, first_name=first_name, last_name=last_name, email=email,
                                        password=password, mobile=mobile, role='Mentor')
             mentor = Mentor.objects.get(mentor=user)
             data = {
@@ -662,7 +662,7 @@ class AddMentorAPIView(GenericAPIView):
                 mentor.course.add(course_id)
                 mentor.save()
             log.info('New Mentor is added')
-            return Response({'response': f"{mentor} you are added as a Mentor"}, status=status.HTTP_200_OK)
+            return Response({'response': f"{mentor} has been added as a Mentor"}, status=status.HTTP_200_OK)
         except IntegrityError as e:
             log.error(e)
             return Response({'response': 'Mentor already exist'}, status=status.HTTP_400_BAD_REQUEST)
@@ -680,8 +680,8 @@ class GetMentorDetailsAPIView(GenericAPIView):
     def get_student_count_in_course_list(self, mentor):
         """
         This function is used for fetching the mentors details
-        :param mentor:
-        :return:
+        :param mentor: mentor
+        :return: return student count
         """
         courses = mentor.course.all()
         course_list = []
@@ -731,6 +731,11 @@ class AddStudent(GenericAPIView):
     permission_classes = [isAdmin]
 
     def post(self, request):
+        """
+        This function is used for adding student with course and mentor
+        :param request: student details
+        :return: add student
+        """
         try:
             serializer = self.serializer_class(data=request.data, context={'user': request.META['user']})
             serializer.is_valid(raise_exception=True)
@@ -751,6 +756,16 @@ class AddStudent(GenericAPIView):
                                                        course=course,
                                                        mentor=Mentor.objects.get(
                                                            mentor=User.objects.get(mentor=mentor)))
+                    data = {
+                        'name': user.get_full_name(),
+                        'username': user.username,
+                        'password': password,
+                        'role': user.role,
+                        'email': user.email,
+                        'site': get_current_site(request).domain,
+                        'token': JWTAuth.getToken(username=user.username, password=user.password)
+                    }
+                    send_registration_mail.delay(data)
                     log.info("Student is created succesfully")
                     return Response({'response': "Student is created succesfully"}, status=status.HTTP_201_CREATED)
                 log.error('This course is not assigned to the mentor.')
