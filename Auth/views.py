@@ -100,8 +100,7 @@ class UserRegistrationView(GenericAPIView):
         send_registration_mail.delay(data)
         log.info(f"Registration is done and mail is sent to {request.data['email']}")
         return Response(
-            {'response': f"A new user registered successfully", 'username': username, 'password': password,
-             'token': data['token']}, status=status.HTTP_201_CREATED)
+            {'response': f"A new user registered successfully", 'username': username, 'password': password}, status=status.HTTP_201_CREATED)
 
 
 @method_decorator(CantAccessAfterLogin, name='dispatch')
