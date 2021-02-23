@@ -90,6 +90,7 @@ class UserRegistrationView(GenericAPIView):
         password = GeneratePassword.generate_password(self)
         user = User.objects.create_user(username=username, first_name=first_name, last_name=last_name,
                                         email=email, mobile=mobile, role=role, password=password)
+
         data = {
             'name': user.get_full_name(),
             'username': user.username,
