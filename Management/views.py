@@ -19,12 +19,10 @@ sys.path.append('..')
 from Auth.permissions import isAdmin, isMentorOrAdmin, OnlyStudent
 from Auth.middlewares import TokenAuthentication
 from LMS.loggerConfig import log
-import random
-from Auth.models import User
+
 from Management.utils import GeneratePassword, GetFirstNameAndLastName
-import datetime
-from Auth.models import User
 from Management.serializer import *
+from Auth.models import User, Roles
 
 
 @method_decorator(TokenAuthentication, name='dispatch')
@@ -638,10 +636,8 @@ class AddMentorAPIView(GenericAPIView):
                 'name': user.get_full_name(),
                 'username': user.username,
                 'password': password,
-                'role': user.role,
                 'email': user.email,
                 'site': get_current_site(request).domain,
-                'token': JWTAuth.getToken(username=user.username, password=user.password)
             }
             send_registration_mail.delay(data)
             courses = serializer.data['mentor'].get('course')
@@ -753,10 +749,8 @@ class AddStudent(GenericAPIView):
                         'name': user.get_full_name(),
                         'username': user.username,
                         'password': password,
-                        'role': user.role,
                         'email': user.email,
                         'site': get_current_site(request).domain,
-                        'token': JWTAuth.getToken(username=user.username, password=user.password)
                     }
                     send_registration_mail.delay(data)
                     log.info("Student is created succesfully")
