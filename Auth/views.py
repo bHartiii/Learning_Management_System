@@ -198,7 +198,6 @@ class ForgotPasswordView(GenericAPIView):
         }
         send_password_reset_mail.delay(email_data)
         log.info('reset password link is sent to mail')
-        print(email_data['token'])
         return Response({'response': 'Password reset link is sent to your mail'}, status=status.HTTP_200_OK)
 
 
