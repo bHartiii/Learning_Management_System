@@ -101,12 +101,14 @@ class UserRegistrationView(GenericAPIView):
         send_registration_mail.delay(data)
         log.info(f"Registration is done and mail is sent to {request.data['email']}")
         return Response(
-            {'response': f"A new user registered successfully", 'username': username, 'password': password}, status=status.HTTP_201_CREATED)
+            {'response': f"A new user registered successfully", 'username': username, 'password': password},
+            status=status.HTTP_201_CREATED)
 
 
 @method_decorator(CantAccessAfterLogin, name='dispatch')
 class UserLoginView(GenericAPIView):
     serializer_class = UserLoginSerializer
+
     def post(self, request, token=None):
         """This API is used to log user in
         @param request: basic credential
@@ -138,6 +140,8 @@ class UserLoginView(GenericAPIView):
 
 @method_decorator(TokenAuthentication, name='dispatch')
 class UserLogoutView(GenericAPIView):
+    serializer_class = UserLoginSerializer
+
     def get(self, request):
         """This API is used to log user out and to clear the user session
         """
@@ -194,6 +198,7 @@ class ForgotPasswordView(GenericAPIView):
         }
         send_password_reset_mail.delay(email_data)
         log.info('reset password link is sent to mail')
+        print(email_data['token'])
         return Response({'response': 'Password reset link is sent to your mail'}, status=status.HTTP_200_OK)
 
 
