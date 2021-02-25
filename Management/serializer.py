@@ -237,7 +237,7 @@ class StudentProfileDetails(serializers.ModelSerializer):
                   'year_of_experience', 'current_location', 'current_address']
 
 
-class User(serializers.ModelSerializer):
+class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ['email', 'mobile']
