@@ -2,8 +2,8 @@ from rest_framework import status
 from django.test import TestCase, Client
 from django.urls import reverse
 from Auth.models import User, Roles
-from Management.models import Mentor, Student, Course, StudentCourseMentor
-from ..serializer import AddStudentSerializer, MentorCourseSerializer
+from Management.models import Mentor, Student, Course, StudentCourseMentor,Education
+from ..serializer import AddStudentSerializer, MentorCourseSerializer,StudentProfileDetails,UserSerializer,EducationSerializer1,CourseMentorSerializers
 import json
 from rest_framework.response import Response
 import datetime
@@ -196,4 +196,27 @@ class ManagementAPITest(TestCase):
         response = self.client.get(reverse('mentor-details'), **auth_headers, content_type=CONTENT_TYPE)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
-    
+#Testcases for student profile
+    def test_get_student_profile_details_with_valid_payload_without_login(self):
+        response = self.client.get(reverse('students-profile'), content_type=CONTENT_TYPE)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_get_student_profile_details_with_valid_payload_after_login_by_invalid_credentials(self):
+        auth_headers = self.login_method(self.invalid_login_payload)
+        response = self.client.get(reverse('students-profile'), **auth_headers, content_type=CONTENT_TYPE)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_get_student_profile_details_with_valid_payload_after_login_by_admin_credentials(self):
+        auth_headers = self.login_method(self.admin_login_payload)
+        response = self.client.get(reverse('students-profile'), **auth_headers, content_type=CONTENT_TYPE)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_get_student_profile_details_with_valid_payload_after_login_by_mentor_credentials(self):
+        auth_headers = self.login_method(self.mentor_login_payload)
+        response = self.client.get(reverse('students-profile'), **auth_headers, content_type=CONTENT_TYPE)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_get_student_profile_details_with_valid_payload_after_login_by_student_credentials(self):
+        auth_headers = self.login_method(self.student_login_payload)
+        response = self.client.get(reverse('students-profile'), **auth_headers, content_type=CONTENT_TYPE)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
