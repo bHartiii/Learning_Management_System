@@ -775,7 +775,7 @@ class Studentprofile(GenericAPIView):
     serializer_class = StudentProfileDetails
     permission_classes = [AllowAny]
     queryset = Student.objects.all()
-
+    queryset1=Education.objects.all()
     def get(self, request, student_id):
 
         try:
@@ -789,12 +789,13 @@ class Studentprofile(GenericAPIView):
             serializer = dict(self.serializer_class(student).data)
             userSerializer = UserSerializer(student.student).data
             serializer.update({'USER_DATA': userSerializer})
-
-            EducationDetails = EducationSerializer1(student.student).data
+            query = self.queryset1.filter(student_id=student_id)
+            EducationDetails = EducationSerializer1(query, many=True).data
             serializer.update({'Education_Details': EducationDetails})
             student = StudentCourseMentor.objects.get(student_id=student.id)
             studentCourseSerializer = CourseMentorSerializers(student).data
             serializer.update({'Mentor&Course': studentCourseSerializer})
+
             log.info(f"Data accessed by {request.META['user'].role.role}")
             return Response({'response': serializer}, status=status.HTTP_200_OK)
         except (Student.DoesNotExist, StudentCourseMentor.DoesNotExist):
