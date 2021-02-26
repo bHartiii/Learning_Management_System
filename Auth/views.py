@@ -25,6 +25,7 @@ from LMS.cache import Cache
 import datetime
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
+from LMS.mailConfirmation import Email
 
 
 class AddRoleAPIView(GenericAPIView):
@@ -196,7 +197,11 @@ class ForgotPasswordView(GenericAPIView):
             'site': get_current_site(request).domain,
             'token': JWTAuth.getToken(username=user.username, password=user.password)
         }
-        send_password_reset_mail.delay(email_data)
+        print(email_data['token'])
+        absoluteURL = "http://" + email_data['site'] + reverse('reset-password')+"token="+email_data['token']
+        print(absoluteURL)
+        # send_password_reset_mail.delay(email_data)
+        Email.sendEmail(Email.configurePasswordRestEmail(email_data))
         log.info('reset password link is sent to mail')
         return Response({'response': 'Password reset link is sent to your mail'}, status=status.HTTP_200_OK)
 
@@ -205,10 +210,11 @@ class ForgotPasswordView(GenericAPIView):
 class ResetPasswordView(GenericAPIView):
     serializer_class = ResetPasswordSerializer
 
-    def put(self, request, token):
+    def put(self, request):
         """This API is used to reset the user password after validating jwt token and its payload
         @param token: jwt token
         """
+        token = request.GET.get('token')
         try:
             blacklist_token = TokenBlackList.objects.get(token=token)
         except TokenBlackList.DoesNotExist:
@@ -238,3 +244,4 @@ class ResetPasswordView(GenericAPIView):
         except User.DoesNotExist:
             log.info('User not found')
             return Response({'response': 'User not found!'}, status=status.HTTP_404_NOT_FOUND)
+

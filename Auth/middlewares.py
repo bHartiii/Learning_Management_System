@@ -51,4 +51,4 @@ class CantAccessAfterLogin(object):
             return JsonResponse({'response': 'You need to logout to access this this resource'},
                                 status=status.HTTP_406_NOT_ACCEPTABLE)
         else:
-            return self.get_response(request, token)
+            return self.get_response(request)
