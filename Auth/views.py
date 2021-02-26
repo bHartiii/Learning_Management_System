@@ -197,11 +197,7 @@ class ForgotPasswordView(GenericAPIView):
             'site': get_current_site(request).domain,
             'token': JWTAuth.getToken(username=user.username, password=user.password)
         }
-        print(email_data['token'])
-        absoluteURL = "http://" + email_data['site'] + reverse('reset-password')+"token="+email_data['token']
-        print(absoluteURL)
-        # send_password_reset_mail.delay(email_data)
-        Email.sendEmail(Email.configurePasswordRestEmail(email_data))
+        send_password_reset_mail.delay(email_data)
         log.info('reset password link is sent to mail')
         return Response({'response': 'Password reset link is sent to your mail'}, status=status.HTTP_200_OK)
 
