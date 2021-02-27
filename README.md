@@ -261,11 +261,12 @@
 - Click on the following link to know how to deploy django application on AWS
 [link](https://docs.google.com/document/d/1j1fh9MCJDG2gybPfs9Zk0Kvp5i9Q6u3ys6PrL9UU1G4/edit?usp=sharing)
 ---
-### Author
+
+###  Author
 1. Bharti Mali
 2. Archana Bhamare
 3. Ranjith P
-4. Ronali Panigraphy
+4. Ronali Panigrahy
 5. Birajit Nath
 
 
