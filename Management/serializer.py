@@ -71,7 +71,8 @@ class StudentSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Student
-        fields = '__all__'
+        fields = ['id', 'student', 'student_id', 'sid', 'alt_number', 'relation_with_alt_number_holder', 'current_location',
+                  'current_address', 'git_link', 'year_of_experience']
 
 class StudentBasicSerializer(serializers.ModelSerializer):
     student = serializers.StringRelatedField(read_only=True)
