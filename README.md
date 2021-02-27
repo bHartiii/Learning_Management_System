@@ -98,7 +98,7 @@
 ### Clone the Project:
 
     git clone <git_repository>
-### Command a Virtual Environment:
+### Command to create Virtual Environment:
 
     python -m venv venv
 ### Command to activate virtual environment:
