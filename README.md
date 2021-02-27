@@ -112,7 +112,8 @@
 - Then create project app using:
         
   `python manage.py startapp <App_name>`
-###sample .env
+
+### sample .env
 
     export APP_SECRET_KEY=
     export DBBACKEND=
