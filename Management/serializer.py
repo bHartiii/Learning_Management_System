@@ -9,6 +9,9 @@ from Auth.models import User
 
 
 class CourseSerializer(serializers.ModelSerializer):
+    """
+    This is Add_course serializer for adding course
+    """
     class Meta:
         model = Course
         fields = ['id', 'course_name', 'cid', 'duration_weeks', 'description', 'course_price']
@@ -18,8 +21,10 @@ class CourseSerializer(serializers.ModelSerializer):
         data['course_name'] = data['course_name'].upper()
         return data
 
-
 class CourseMentorSerializer(serializers.ModelSerializer):
+    """
+    This serializer is used for mapping courser to mentor
+    """
     class Meta:
         model = Mentor
         fields = ['mentor', 'course']
@@ -30,8 +35,10 @@ class UserSerializer(serializers.ModelSerializer):
         model = User
         fields = ['email', 'mobile', 'role']
 
-
 class StudentCourseMentorSerializer(serializers.ModelSerializer):
+    """
+    This serializer is used for mapping mentor and courser to student
+    """
     class Meta:
         model = StudentCourseMentor
         fields = ['student', 'course', 'mentor', 'create_by']
@@ -43,6 +50,9 @@ class StudentCourseMentorSerializer(serializers.ModelSerializer):
 
 
 class StudentCourseMentorReadSerializer(serializers.ModelSerializer):
+    """
+    This serializer is used for getting student_mentor_course details
+    """
     student = serializers.StringRelatedField(read_only=True)
     mentor = serializers.StringRelatedField(read_only=True)
     course = serializers.StringRelatedField(read_only=True)
@@ -56,6 +66,9 @@ class StudentCourseMentorReadSerializer(serializers.ModelSerializer):
 
 
 class StudentCourseMentorUpdateSerializer(serializers.ModelSerializer):
+    """
+    This serializer is used for updating mentor or course of student
+    """
     class Meta:
         model = StudentCourseMentor
         fields = ['course', 'mentor', 'updated_by']
