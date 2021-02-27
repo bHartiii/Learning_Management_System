@@ -93,26 +93,21 @@
     Accessible by admin,student and for mentors only assigned students under him/her.
 25. MentorStudentCourse -
     - This API is used to get the list of students according to mentor_id and course_id.
-## To install Requirement packages using:
+---
+## Project Setup:
+### Clone the Project:
+
+    git clone <git_repository>
+### Command a Virtual Environment:
+
+    python -m venv venv
+### Command to activate virtual environment:
+
+    venv\Scripts\activate
+### To install Requirement packages using:
   
     pip install -r requirements.txt
 ---
-## Start Django Project Creation:
-
-### Project Startup:
-- Firstly create project directory folder-
-  
-  `mkdir Learning_Management_System`
-- Create a Virtual Environment-
-    
-  `python -m venv venv`
-- Create django project using:
-    
-  `django-admin startproject <Project_name>`
-- Then create project app using:
-        
-  `python manage.py startapp <App_name>`
-
 ### sample .env
 
     export APP_SECRET_KEY=
@@ -222,10 +217,6 @@
       app = Celery('project_name')
       app.config_from_object('django.conf:settings', namespace='CELERY')
       app.autodiscover_tasks()
-- NOw edit the init.py file in the project root:
-  
-      from .celery import app as celery_app
-      __all__ = ['celery_app']
 - Then in django app create tasks.py file and write the celery tasks.
     - Basic tasks
       
