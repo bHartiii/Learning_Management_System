@@ -211,7 +211,6 @@ class StudentCourseMentorMapAPIView(GenericAPIView):
             return Response({'response': "Mentor or Course can not be Null"}, status=status.HTTP_400_BAD_REQUEST)
         if course in mentor.course.all():
             serializer.save()
-            student.course_assigned = True
             student.save()
             log.info('Record added')
             return Response({'response': "Record added"}, status=status.HTTP_200_OK)

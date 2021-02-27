@@ -146,7 +146,7 @@ class NewStudentsSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Student
-        fields = ['id', 'student', 'course_assigned']
+        fields = ['id', 'student']
 
 
 class PerformanceSerializer(serializers.ModelSerializer):
