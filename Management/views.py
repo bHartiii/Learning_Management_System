@@ -452,7 +452,7 @@ class EducationDetailsUpdate(GenericAPIView):
 
 @method_decorator(TokenAuthentication, name='dispatch')
 class NewStudents(GenericAPIView):
-    serializer_class = NewStudentsSerializer
+    serializer_class = StudentSerializer
     permission_classes = [isAdmin]
     queryset = Student.objects.all()
 
@@ -460,13 +460,21 @@ class NewStudents(GenericAPIView):
         """Using this API admin will retrieve new students who have not been assigned to any course yet
         @return : returns list of new students data
         """
-        query = self.queryset.filter(course_assigned=False)
+        mapped_student = []
+        query = []
+        for student in StudentCourseMentor.objects.all():
+            mapped_student.append(student.student)
+        for student in Student.objects.all():
+            if not student in mapped_student:
+                query.append(self.queryset.get(student=User.objects.get(id=student.id)))
         serializer = self.serializer_class(query, many=True)
         if not serializer.data:
             log.info('No records found')
             return Response({'response': 'No records found'}, status=status.HTTP_404_NOT_FOUND)
         log.info('Records Retrieved by ' + request.META['user'].role.role)
         return Response({'response': serializer.data}, status=status.HTTP_200_OK)
+            
+            
 
 
 @method_decorator(TokenAuthentication, name='dispatch')
