@@ -283,7 +283,7 @@ class GetMentorsForSpecificCourse(GenericAPIView):
 class StudentsAPIView(GenericAPIView):
     serializer_class = StudentSerializer
     permission_classes = [AllowAny, ]
-    queryset = StudentCourseMentor.objects.all()
+    queryset = Student.objects.all()
 
     def get(self, request):
         """Using this API Admin can see all course assigned students and mentor can see his course assigned students
