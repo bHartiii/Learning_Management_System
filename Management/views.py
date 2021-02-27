@@ -464,7 +464,7 @@ class NewStudents(GenericAPIView):
         query = []
         for student in StudentCourseMentor.objects.all():
             mapped_student.append(student.student)
-        for student in Student.objects.all():
+        for student in self.queryset.all():
             if not student in mapped_student:
                 query.append(self.queryset.get(student=User.objects.get(id=student.id)))
         serializer = self.serializer_class(query, many=True)
