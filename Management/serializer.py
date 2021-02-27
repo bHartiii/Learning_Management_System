@@ -68,15 +68,10 @@ class StudentCourseMentorUpdateSerializer(serializers.ModelSerializer):
 
 class StudentSerializer(serializers.ModelSerializer):
     student = serializers.StringRelatedField(read_only=True)
-    course = serializers.StringRelatedField(read_only=True)
-    mentor = serializers.StringRelatedField(read_only=True)
-    mentor_id = serializers.IntegerField()
-    course_id = serializers.IntegerField()
 
     class Meta:
-        model = StudentCourseMentor
-        fields = ['id', 'course_id', 'student_id', 'mentor_id', 'student', 'course', 'mentor']
-
+        model = Student
+        fields = '__all__'
 
 class StudentBasicSerializer(serializers.ModelSerializer):
     student = serializers.StringRelatedField(read_only=True)
