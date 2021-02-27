@@ -206,9 +206,6 @@
             path('redoc/', schema_view.with_ui('redoc', cache_timeout=0), name='schema-redoc'),
         ]
 ---
-- Create Serializer class.
-- Create API Views.
----
 ## Celery:
 - **Celery**:
   - Celery is a task queue based on distributed message passing.
@@ -263,8 +260,8 @@
 ### Deploy application on AWS
 - Click on the following link to know how to deploy django application on AWS
 [link](https://docs.google.com/document/d/1j1fh9MCJDG2gybPfs9Zk0Kvp5i9Q6u3ys6PrL9UU1G4/edit?usp=sharing)
-
-###Author
+---
+### Author
 1. Bharti Mali
 2. Archana Bhamare
 3. Ranjith P
