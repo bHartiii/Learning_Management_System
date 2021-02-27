@@ -218,14 +218,12 @@
       app.config_from_object('django.conf:settings', namespace='CELERY')
       app.autodiscover_tasks()
 - Then in django app create tasks.py file and write the celery tasks.
-    - Basic tasks
-      
-
-      from celery import shared_task
-
-      @shared_task
-      def name_of_your_function(optional_param):
-          pass  # do something heavy
+   
+          from celery import shared_task
+    
+          @shared_task
+          def name_of_your_function(optional_param):
+              pass  # do something heavy
 - Starting The Worker Process : Open a new terminal tab, and run the following command:
   
    `celery -A myproject worker -l info`
