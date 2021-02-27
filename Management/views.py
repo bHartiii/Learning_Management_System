@@ -164,7 +164,7 @@ class MentorDetailsAPIView(GenericAPIView):
             @param mentor_id: mentor primary key @return: Specific Mentor Profile
         """
         try:
-            mentor = Mentor.objects.get(mentor_id=mentor_id)
+            mentor = Mentor.objects.get(id=mentor_id)
             mentorSerializerDict = dict(MentorCourseSerializer(mentor).data)
             userSerializer = UserSerializer(mentor.mentor)
             mentorSerializerDict.update(userSerializer.data)
