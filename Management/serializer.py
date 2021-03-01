@@ -21,7 +21,6 @@ class CourseSerializer(serializers.ModelSerializer):
         data['course_name'] = data['course_name'].upper()
         return data
 
-
 class CourseMentorSerializer(serializers.ModelSerializer):
     """
         This serializer is used to mape any mentor with any course
@@ -38,7 +37,6 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ['email', 'mobile']
-
 
 class StudentCourseMentorSerializer(serializers.ModelSerializer):
     """
