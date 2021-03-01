@@ -5,23 +5,24 @@ from . import models
 
 
 class Degree(enum.Enum):
-
     SSC = 'SSC'
     HSC = 'HSC'
     UG = 'UG'
     PG = 'PG'
 
+
 class GeneratePassword:
     def generate_password(self):
         # generates letters
         letters = string.ascii_letters
-        str_part = ''.join(random.choice(letters) for i in range(5)) 
+        str_part = ''.join(random.choice(letters) for i in range(5))
 
         # generates digits
         digits = string.digits
-        int_part = ''.join(random.choice(digits) for i in range(5)) 
+        int_part = ''.join(random.choice(digits) for i in range(5))
 
-        return str_part+"-"+int_part
+        return str_part + "-" + int_part
+
 
 class GetFirstNameAndLastName:
     def get_last_name(name):
@@ -38,14 +39,14 @@ class GetFirstNameAndLastName:
             first_name_data = name_data[0:-1]
             first_name = first_name_data[0]
             if len(first_name_data) > 1:
-                for i in range(len(first_name_data)-1):
-                    first_name = first_name+" "+first_name_data[i+1]
+                for i in range(len(first_name_data) - 1):
+                    first_name = first_name + " " + first_name_data[i + 1]
         else:
             first_name = name_data[0]
         return first_name
 
-class Pattern(enum.Enum):
 
+class Pattern(enum.Enum):
     GIT_PATTERN = "^(https://github.com/)[a-zA-Z0-9]{1,}(/)?"
     MOBILE_PATTERN = "^(\+91|91|0)?[6-9]{1}[0-9]{9}$"
     NAME_PATTERN = "^[A-Z]{1}[a-zA-Z]{2,}$"
@@ -76,22 +77,22 @@ class Default(enum.Enum):
     SID = 'SI-1000'
     CID = 'CI-1000'
     MID = 'MI-1000'
-    
+
 
 class Configure:
     @staticmethod
     def get_configured_excel_data(row, mentor_id):
         """This function configures excel data and returns """
-        dd, mm, yyyy = row[1][4].split('-') # formating date
+        dd, mm, yyyy = row[1][4].split('-')  # formating date
         date = f"{yyyy}-{mm}-{dd}"
 
         data = {
-        'student': models.Student.objects.get(sid=row[1][0]).id,
-        'course': models.Course.objects.get(cid=row[1][1]).id,
-        'week_no': row[1][2].split(' ')[1],
-        'score': row[1][3],
-        'review_date': date,
-        'remark': row[1][-1],
-        'mentor': mentor_id
+            'student': models.Student.objects.get(sid=row[1][0]).id,
+            'course': models.Course.objects.get(cid=row[1][1]).id,
+            'week_no': row[1][2].split(' ')[1],
+            'score': row[1][3],
+            'review_date': date,
+            'remark': row[1][-1],
+            'mentor': mentor_id
         }
         return data

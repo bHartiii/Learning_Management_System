@@ -3,13 +3,9 @@ from django.db import IntegrityError
 from rest_framework import authentication, status, generics, viewsets
 from rest_framework.response import Response
 from Auth.tasks import send_registration_mail
-from Auth.JWTAuthentication import JWTAuth
-from Auth.models import User, Roles
-from .models import Course, Mentor, StudentCourseMentor, Student, Education, Performance
 from django.utils.decorators import method_decorator
 from rest_framework.generics import GenericAPIView
 from rest_framework.permissions import AllowAny
-from .serializer import *
 import pandas
 from .utils import ExcelHeader, ValueRange, Pattern, Configure
 from .excel_validator import ExcelException, ExcelValidator

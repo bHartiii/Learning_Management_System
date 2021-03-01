@@ -1,24 +1,29 @@
 from django.test import TestCase
 from django.test import Client
+
+from Auth.models import Roles
 from ..models import User, Course, Mentor
 from django.urls import reverse
 from rest_framework import status
 import json
 
-from ..serializers import CourseMentorSerializer
-
 
 class TestManagementApp(TestCase):
     def setUp(self):
+        self.admin_role = Roles.objects.create(role='admin')
+        self.student_role = Roles.objects.create(role='student')
+        self.mentor_role = Roles.objects.create(role='mentor')
         # Admin user
-        User.objects.create_user(username='ranjith', password='ranjith123', role='Admin',
-                                 is_first_time_login=False)
+        User.objects.create_user(username='ranjith', first_name='Ranjith', last_name='Ranju',
+                                 email='ranjith1@gmail.com', mobile='9076545676', password='ranjith123',
+                                 role=self.admin_role)
         # Engineer user
-        User.objects.create_user(username='RahulKL', password='rahul123', role='Engineer',
-                                 is_first_time_login=False)
+        User.objects.create_user(username='RahulKL', first_name='Rahul', last_name='Ranju', email='ranjith2@gmail.com',
+                                 mobile='9076545626', password='rahul123', role=self.student_role)
         # Mentor user
-        self.Mentor = User.objects.create_user(username='Shreyas', password='Shreyas', role='Mentor',
-                                               is_first_time_login=False)
+        self.Mentor = User.objects.create_user(username='Shreyas', first_name='Shreyas', last_name='Ranju',
+                                               email='ranjith3@gmail.com', mobile='9076543626', password='Shreyas',
+                                               role=self.mentor_role)
 
         self.client = Client()
 
@@ -149,11 +154,6 @@ class TestManagementApp(TestCase):
             'HTTP_AUTHORIZATION': token,
         }
         response = self.client.get(
-            reverse('mentor-student-course', kwargs={'mentor_id': self.mentor_course.id, 'course_id': self.course.id}),
+            reverse('mentor-student-course', kwargs={'mentor_id': self.Mentor.id, 'course_id': self.course.id}),
             **auth_headers)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-
-
-
-    ### Test cases for MentorDetailsAPI
-

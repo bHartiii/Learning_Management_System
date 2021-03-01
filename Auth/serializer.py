@@ -8,10 +8,11 @@ from Management.utils import Pattern
 
 class RoleSerializer(serializers.ModelSerializer):
     """ This is the add role serializer"""
+
     class Meta:
         model = Roles
         fields = ['id', 'role']
-        extra_kwargs = {'id':{'read_only':True}}
+        extra_kwargs = {'id': {'read_only': True}}
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -21,6 +22,7 @@ class UserSerializer(serializers.ModelSerializer):
     first_name = serializers.RegexField(Pattern.NAME_PATTERN.value)
     last_name = serializers.RegexField(Pattern.NAME_PATTERN.value)
     mobile = serializers.RegexField(Pattern.MOBILE_PATTERN.value)
+
     class Meta:
         model = User
         fields = ['username', 'first_name', 'last_name', 'email', 'mobile', 'role']
@@ -44,7 +46,6 @@ class UserLoginSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ['username', 'password']
-    
 
 
 class ChangeUserPasswordSerializer(serializers.Serializer):
