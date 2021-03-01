@@ -329,7 +329,7 @@ class StudentDetailsAPIView(GenericAPIView):
             serializer.update(userSerializer)
             try:
                 student = StudentCourseMentor.objects.get(student_id=student.id)
-                studentCourseSerializer = CourseMentorSerializerDetails(student).data
+                studentCourseSerializer = StudentCourseMentorReadSerializer(student).data
                 serializer.update(studentCourseSerializer)
             except StudentCourseMentor.DoesNotExist:
                 pass
@@ -457,8 +457,8 @@ class NotMappedStudents(GenericAPIView):
     queryset = Student.objects.all()
 
     def get(self, request):
-        """Using this API admin will retrieve new students who have not been assigned to any course yet
-        @return : returns list of new students data
+        """Using this API admin will retrieve students who have not been assigned to any course yet
+        @return : returns list of students data that are not mapped 
         """
         try:
             mapped_student = []
@@ -623,7 +623,7 @@ class UpdateScoreFromExcel(GenericAPIView):
 class AddMentorAPIView(GenericAPIView):
     """ This API is used for add mentor"""
     permission_classes = [isAdmin]
-    serializer_class = MentorDetailSerializer
+    serializer_class = AddMentorSerializer
 
     def post(self, request):
         """
@@ -783,7 +783,7 @@ class Studentprofile(GenericAPIView):
     Retrieved by student id
     Accessible by admin,student and for mentors only assigned students under him/her.
     """
-    serializer_class = StudentProfileDetails
+    serializer_class = StudentSerializer
     permission_classes = [AllowAny]
     queryset = Student.objects.all()
     queryset1=Education.objects.all()
@@ -801,10 +801,10 @@ class Studentprofile(GenericAPIView):
             userSerializer = UserSerializer(student.student).data
             serializer.update({'USER_DATA': userSerializer})
             query = self.queryset1.filter(student_id=student_id)
-            EducationDetails = EducationSerializer1(query, many=True).data
+            EducationDetails = EducationSerializer(query, many=True).data
             serializer.update({'Education_Details': EducationDetails})
             student = StudentCourseMentor.objects.get(student_id=student.id)
-            studentCourseSerializer = CourseMentorSerializers(student).data
+            studentCourseSerializer = MentorCourseSerializer(student).data
             serializer.update({'Mentor&Course': studentCourseSerializer})
 
             log.info(f"Data accessed by {request.META['user'].role.role}")
