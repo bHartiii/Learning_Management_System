@@ -99,7 +99,7 @@ class UserRegistrationView(GenericAPIView):
         send_registration_mail.delay(data)
         log.info(f"Registration is done and mail is sent to {request.data['email']}")
         return Response(
-            {'response': f"A new user registered successfully", 'username': username, 'password': password},
+            {'response': f"A new {role.role} is registered successfully"},
             status=status.HTTP_201_CREATED)
 
 
@@ -243,4 +243,3 @@ class ResetPasswordView(GenericAPIView):
         except User.DoesNotExist as e:
             log.error(e)
             return Response({'response': 'User not found!'}, status=status.HTTP_404_NOT_FOUND)
-
