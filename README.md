@@ -5,7 +5,7 @@
 - This project contains four modules - Admin, Mentor, Student and Role.
 - In this project contains Two Apps:
    1. __Auth__
-   2. __management__
+   2. __Management__
     
 ***1.Auth:***
 - This is Authentication App where only Admin will register the user, user can change his password or reset his password.   
@@ -39,9 +39,9 @@
 7. Reset Password API -
     - This API is used to reset the user password after validating jwt token.
 
-***2.management:***
-- In this management app contains all the model related to Student, Mentor and Course
-- management app provides APIs for following features:
+***2.Management:***
+- In this Management app contains all the model related to Student, Mentor and Course
+- Management app provides APIs for following features:
 1. AddCourseAPIView - 
     - This API is used to add course by the admin.
 2. AllCoursesAPIView - 
@@ -109,7 +109,8 @@
     pip install -r requirements.txt
 ---
 ### sample .env
-
+keep your .env file in root app
+    
     export APP_SECRET_KEY=
     export DBBACKEND=
     export DBNAME=
@@ -121,85 +122,15 @@
     export MAILPASSWORD=
     export REDISHOST=
     export REDISPORT=
-### Database Connection:
-- Firstly connect project with postgres database.
-  - In setting.py file:
-        
-        DATABASES = {
-             'default': {
-                'ENGINE': os.environ.get('DBBACKEND'),
-                'NAME': os.environ.get('DBNAME'),
-                'USER': os.environ.get('DBUSER'),
-                'PASSWORD': os.environ.get('DBPASSWORD'),
-                'HOST': os.environ.get('DBHOST'),
-                'PORT': os.environ.get('DBPORT'),
-            }
-        }
-    
-- Create Models for App :
-  - In this project contains Two Apps:
-   1. __Auth__
-   2. __Management__
-- Register App in settings.py file:
-  - In setting.py file:
-    
-        INSTALLED_APPS = [
-            'django.contrib.admin',
-            'django.contrib.auth',
-            'django.contrib.contenttypes',
-            'django.contrib.sessions',
-            'django.contrib.messages',
-            'django.contrib.staticfiles',
-            'Auth.apps.AuthConfig',
-            'Management.apps.ManagementConfig',
-            'drf_yasg',
-            'rest_framework',
-            'django_celery_results',
-        ]
-- Register models in admin.py file.
-- After creating models, migrate the project:
+---    
+- migrate the project:
 
         python manage.py makemigrations
         python manage.py migrate
 ---
 ## Swagger Configuration:
-- Firstly installing swagger using:
-
-      pip install -U drf-yasg
-- Additionally, if you want to use the built-in validation mechanisms, you need to install some extra requirements:
-
-      pip install -U drf-yasg[validation]
-- We need to configured swagger -
-  - Add swagger in setting.py-Install_Apps -
-  
-        INSTALLED_APPS = [
-                  ...
-                  'django.contrib.staticfiles',
-                  'drf_yasg',
-                  ...
-              ]
- - Then in root urls.py file add following code:
-
-        from rest_framework import permissions
-        from drf_yasg.views import get_schema_view
-        from drf_yasg import openapi
-        
-        schema_view = get_schema_view(
-            openapi.Info(
-                title="Fundoo_Note",
-                default_version='v1',
-                description="Test description",
-                terms_of_service="https://www.google.com/policies/terms/",
-                contact=openapi.Contact(email="contact@fundoonote.local"),
-                license=openapi.License(name="Test License"),
-            ),
-            public=True,
-            permission_classes=(permissions.AllowAny,),
-        )
-        urlpatterns = [
-            path('', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
-            path('redoc/', schema_view.with_ui('redoc', cache_timeout=0), name='schema-redoc'),
-        ]
+- Click on the link to know swagger configuration
+[link](https://drf-yasg.readthedocs.io/en/stable/readme.html)
 ---
 ## Celery:
 - **Celery**:
@@ -247,7 +178,7 @@
     - password : guest
 ---  
 ### Deploy application on AWS
-- Click on the following link to know how to deploy django application on AWS
+- Click on the link to know how to deploy django application on AWS
 [link](https://docs.google.com/document/d/1j1fh9MCJDG2gybPfs9Zk0Kvp5i9Q6u3ys6PrL9UU1G4/edit?usp=sharing)
 ---
 
