@@ -222,6 +222,17 @@ class MentorCourseSerializer(serializers.ModelSerializer):
         model = Mentor
         fields = ['id','image', 'mentor_id', 'mid', 'mentor', 'course']
 
+class GetMentorCourseDetailsSerializer(serializers.ModelSerializer):
+    """
+        This serailizer is used to get mentor-course details
+    """
+    mentor = serializers.StringRelatedField(read_only=True)
+    course = serializers.StringRelatedField(read_only=True)
+
+    class Meta:
+        model = Mentor
+        fields = ['id','image', 'mentor_id', 'mid', 'mentor', 'course']
+
 
 class AddStudentSerializer(serializers.ModelSerializer):
     """

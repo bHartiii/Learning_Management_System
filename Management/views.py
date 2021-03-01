@@ -804,7 +804,7 @@ class Studentprofile(GenericAPIView):
             EducationDetails = EducationSerializer(query, many=True).data
             serializer.update({'Education_Details': EducationDetails})
             student = StudentCourseMentor.objects.get(student_id=student.id)
-            studentCourseSerializer = MentorCourseSerializer(student).data
+            studentCourseSerializer = GetMentorCourseDetailsSerializer(student).data
             serializer.update({'Mentor&Course': studentCourseSerializer})
 
             log.info(f"Data accessed by {request.META['user'].role.role}")
