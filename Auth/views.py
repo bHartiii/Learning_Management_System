@@ -19,6 +19,9 @@ from LMS.loggerConfig import log
 from Management.utils import GeneratePassword
 from LMS.cache import Cache
 import datetime
+from drf_yasg.utils import swagger_auto_schema
+from drf_yasg import openapi
+from LMS.mailConfirmation import Email
 
 
 class AddRoleAPIView(GenericAPIView):
@@ -206,27 +209,11 @@ class ResetPasswordView(GenericAPIView):
     """ This API used to reset the password"""
     serializer_class = ResetPasswordSerializer
 
-    def get(self, request, token):
-        """This API is used to validate the jwt token present in the password reset link
-        @param token: jwt token
-        """
-        try:
-            blacklist_token = TokenBlackList.objects.get(token=token)
-        except TokenBlackList.DoesNotExist:
-            blacklist_token = None
-        if blacklist_token:
-            log.info('This link is already used')
-            return Response({'response': 'This link is already used'}, status=status.HTTP_406_NOT_ACCEPTABLE)
-        jwtTokenData = JWTAuth.verifyToken(token)
-        if jwtTokenData:
-            return Response({'response': token}, status=status.HTTP_200_OK)
-        log.info('invalid link request')
-        return Response({'response': 'Invalid link found'}, status=status.HTTP_403_FORBIDDEN)
-
-    def put(self, request, token):
+    def put(self, request):
         """This API is used to reset the user password after validating jwt token and its payload
         @param token: jwt token
         """
+        token = request.GET.get('token')
         try:
             blacklist_token = TokenBlackList.objects.get(token=token)
         except TokenBlackList.DoesNotExist:
@@ -256,3 +243,4 @@ class ResetPasswordView(GenericAPIView):
         except User.DoesNotExist as e:
             log.error(e)
             return Response({'response': 'User not found!'}, status=status.HTTP_404_NOT_FOUND)
+

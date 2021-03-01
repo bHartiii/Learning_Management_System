@@ -81,15 +81,11 @@ class StudentCourseMentorUpdateSerializer(serializers.ModelSerializer):
 
 class StudentSerializer(serializers.ModelSerializer):
     student = serializers.StringRelatedField(read_only=True)
-    course = serializers.StringRelatedField(read_only=True)
-    mentor = serializers.StringRelatedField(read_only=True)
-    mentor_id = serializers.IntegerField()
-    course_id = serializers.IntegerField()
 
     class Meta:
-        model = StudentCourseMentor
-        fields = ['id', 'course_id', 'student_id', 'mentor_id', 'student', 'course', 'mentor']
-
+        model = Student
+        fields = ['id', 'student', 'student_id', 'sid', 'alt_number', 'relation_with_alt_number_holder', 'current_location',
+                  'current_address', 'git_link', 'year_of_experience']
 
 class StudentBasicSerializer(serializers.ModelSerializer):
     student = serializers.StringRelatedField(read_only=True)
@@ -157,14 +153,6 @@ class CourseMentorSerializerDetails(serializers.ModelSerializer):
     class Meta:
         model = StudentCourseMentor
         fields = ['id', 'student_id', 'mentor_id', 'course_id', 'student', 'mentor', 'course']
-
-
-class NewStudentsSerializer(serializers.ModelSerializer):
-    student = serializers.StringRelatedField(read_only=True)
-
-    class Meta:
-        model = Student
-        fields = ['id', 'student', 'course_assigned']
 
 
 class PerformanceSerializer(serializers.ModelSerializer):
@@ -250,7 +238,7 @@ class StudentProfileDetails(serializers.ModelSerializer):
                   'year_of_experience', 'current_location', 'current_address']
 
 
-class User(serializers.ModelSerializer):
+class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ['email', 'mobile']

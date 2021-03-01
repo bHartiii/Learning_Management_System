@@ -186,7 +186,7 @@ class MentorDetailsAPIView(GenericAPIView):
             @param mentor_id: mentor primary key @return: Specific Mentor Profile
         """
         try:
-            mentor = Mentor.objects.get(mentor_id=mentor_id)
+            mentor = Mentor.objects.get(id=mentor_id)
             mentorSerializerDict = dict(MentorCourseSerializer(mentor).data)
             userSerializer = UserSerializer(mentor.mentor)
             mentorSerializerDict.update(userSerializer.data)
@@ -238,7 +238,6 @@ class StudentCourseMentorMapAPIView(GenericAPIView):
             return Response({'response': "Mentor or Course can not be Null"}, status=status.HTTP_400_BAD_REQUEST)
         if course in mentor.course.all():
             serializer.save()
-            student.course_assigned = True
             student.save()
             log.info('Record added')
             return Response({'response': "Record added"}, status=status.HTTP_200_OK)
@@ -321,7 +320,7 @@ class StudentsAPIView(GenericAPIView):
     """
     serializer_class = StudentSerializer
     permission_classes = [AllowAny, ]
-    queryset = StudentCourseMentor.objects.all()
+    queryset = Student.objects.all()
 
     def get(self, request):
         """Using this API Admin can see all course assigned students and mentor can see his course assigned students
@@ -505,11 +504,8 @@ class EducationDetailsUpdate(GenericAPIView):
 
 
 @method_decorator(TokenAuthentication, name='dispatch')
-class NewStudents(GenericAPIView):
-    """
-    This API is used get students who have not been assigned to any course yet
-    """
-    serializer_class = NewStudentsSerializer
+class NotMappedStudents(GenericAPIView):
+    serializer_class = StudentSerializer
     permission_classes = [isAdmin]
     queryset = Student.objects.all()
 
@@ -517,13 +513,25 @@ class NewStudents(GenericAPIView):
         """Using this API admin will retrieve new students who have not been assigned to any course yet
         @return : returns list of new students data
         """
-        query = self.queryset.filter(course_assigned=False)
-        serializer = self.serializer_class(query, many=True)
-        if not serializer.data:
-            log.info('No records found')
-            return Response({'response': 'No records found'}, status=status.HTTP_404_NOT_FOUND)
-        log.info('Records Retrieved by ' + request.META['user'].role.role)
-        return Response({'response': serializer.data}, status=status.HTTP_200_OK)
+        try:
+            mapped_student = []
+            query = []
+            for student in StudentCourseMentor.objects.all():
+                mapped_student.append(student.student)
+            for student in self.queryset.all():
+                if not student in mapped_student:
+                    query.append(self.queryset.get(student=User.objects.get(id=student.student_id)))
+            serializer = self.serializer_class(query, many=True)
+            if not serializer.data:
+                log.info('No records found')
+                return Response({'response': 'No records found'}, status=status.HTTP_404_NOT_FOUND)
+            log.info('Records Retrieved by ' + request.META['user'].role.role)
+            return Response({'response': serializer.data}, status=status.HTTP_200_OK)
+        except Exception as e:
+            log.error(e)
+            return Response({'response':'Something went wrong!!!'}, status=status.HTTP_400_BAD_REQUEST)
+            
+            
 
 
 @method_decorator(TokenAuthentication, name='dispatch')
@@ -843,7 +851,7 @@ class Studentprofile(GenericAPIView):
     serializer_class = StudentProfileDetails
     permission_classes = [AllowAny]
     queryset = Student.objects.all()
-
+    queryset1=Education.objects.all()
     def get(self, request, student_id):
         """
         This function will show the profile data of students
@@ -863,12 +871,13 @@ class Studentprofile(GenericAPIView):
             serializer = dict(self.serializer_class(student).data)
             userSerializer = UserSerializer(student.student).data
             serializer.update({'USER_DATA': userSerializer})
-
-            EducationDetails = EducationSerializer1(student.student).data
+            query = self.queryset1.filter(student_id=student_id)
+            EducationDetails = EducationSerializer1(query, many=True).data
             serializer.update({'Education_Details': EducationDetails})
             student = StudentCourseMentor.objects.get(student_id=student.id)
             studentCourseSerializer = CourseMentorSerializers(student).data
             serializer.update({'Mentor&Course': studentCourseSerializer})
+
             log.info(f"Data accessed by {request.META['user'].role.role}")
             return Response({'response': serializer}, status=status.HTTP_200_OK)
         except (Student.DoesNotExist, StudentCourseMentor.DoesNotExist) as e:
