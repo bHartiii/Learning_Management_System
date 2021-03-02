@@ -160,7 +160,7 @@ class MentorDetailsAPIView(GenericAPIView):
             @param mentor_id: mentor primary key @return: Specific Mentor Profile
         """
         try:
-            mentor = Mentor.objects.get(mentor_id=mentor_id)
+            mentor = Mentor.objects.get(id=mentor_id)
             mentorSerializerDict = dict(MentorCourseSerializer(mentor).data)
             userSerializer = UserSerializer(mentor.mentor)
             mentorSerializerDict.update(userSerializer.data)
@@ -207,7 +207,6 @@ class StudentCourseMentorMapAPIView(GenericAPIView):
             return Response({'response': "Mentor or Course can not be Null"}, status=status.HTTP_400_BAD_REQUEST)
         if course in mentor.course.all():
             serializer.save()
-            student.course_assigned = True
             student.save()
             log.info('Record added')
             return Response({'response': "Record added"}, status=status.HTTP_200_OK)
@@ -279,7 +278,7 @@ class GetMentorsForSpecificCourse(GenericAPIView):
 class StudentsAPIView(GenericAPIView):
     serializer_class = StudentSerializer
     permission_classes = [AllowAny, ]
-    queryset = StudentCourseMentor.objects.all()
+    queryset = Student.objects.all()
 
     def get(self, request):
         """Using this API Admin can see all course assigned students and mentor can see his course assigned students
@@ -449,7 +448,7 @@ class EducationDetailsUpdate(GenericAPIView):
 
 @method_decorator(TokenAuthentication, name='dispatch')
 class NewStudents(GenericAPIView):
-    serializer_class = NewStudentsSerializer
+    serializer_class = StudentSerializer
     permission_classes = [isAdmin]
     queryset = Student.objects.all()
 
@@ -457,13 +456,21 @@ class NewStudents(GenericAPIView):
         """Using this API admin will retrieve new students who have not been assigned to any course yet
         @return : returns list of new students data
         """
-        query = self.queryset.filter(course_assigned=False)
+        mapped_student = []
+        query = []
+        for student in StudentCourseMentor.objects.all():
+            mapped_student.append(student.student)
+        for student in self.queryset.all():
+            if not student in mapped_student:
+                query.append(self.queryset.get(student=User.objects.get(id=student.student_id)))
         serializer = self.serializer_class(query, many=True)
         if not serializer.data:
             log.info('No records found')
             return Response({'response': 'No records found'}, status=status.HTTP_404_NOT_FOUND)
         log.info('Records Retrieved by ' + request.META['user'].role.role)
         return Response({'response': serializer.data}, status=status.HTTP_200_OK)
+            
+            
 
 
 @method_decorator(TokenAuthentication, name='dispatch')
@@ -616,12 +623,12 @@ class AddMentorAPIView(GenericAPIView):
         :param request: mentors details
         :return: add mentor
         """
-        try :
+        try:
             serializer = self.serializer_class(data=request.data)
             serializer.is_valid()
-            name = serializer.data.get('name')
-            email = serializer.data.get('email')
-            mobile = serializer.data.get('mobile')
+            name = serializer.validated_data['name']
+            email = serializer.validated_data['email']
+            mobile = serializer.validated_data['mobile']
             first_name = GetFirstNameAndLastName.get_first_name(name)
             last_name = GetFirstNameAndLastName.get_last_name(name)
             password = GeneratePassword.generate_password(self)
@@ -646,13 +653,13 @@ class AddMentorAPIView(GenericAPIView):
                 mentor.course.add(course_id)
                 mentor.save()
             log.info('New Mentor is added')
-            return Response({'response': f"{mentor} has been added as a Mentor"}, status=status.HTTP_200_OK)
+            return Response({'response': f"{mentor} has been added as a Mentor"}, status=status.HTTP_201_CREATED)
         except IntegrityError as e:
             log.error(e)
-            return Response({'response':"Mentor already exists."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'response': "Mentor already exists."}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
             log.error(e)
-            return Response({'response':'Something went wrong!!!'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'response': 'Something went wrong!!!'}, status=status.HTTP_400_BAD_REQUEST)
 
 
 @method_decorator(TokenAuthentication, name='dispatch')
@@ -771,7 +778,7 @@ class Studentprofile(GenericAPIView):
     serializer_class = StudentProfileDetails
     permission_classes = [AllowAny]
     queryset = Student.objects.all()
-
+    queryset1=Education.objects.all()
     def get(self, request, student_id):
 
         try:
@@ -785,12 +792,13 @@ class Studentprofile(GenericAPIView):
             serializer = dict(self.serializer_class(student).data)
             userSerializer = UserSerializer(student.student).data
             serializer.update({'USER_DATA': userSerializer})
-
-            EducationDetails = EducationSerializer1(student.student).data
+            query = self.queryset1.filter(student_id=student_id)
+            EducationDetails = EducationSerializer1(query, many=True).data
             serializer.update({'Education_Details': EducationDetails})
             student = StudentCourseMentor.objects.get(student_id=student.id)
             studentCourseSerializer = CourseMentorSerializers(student).data
             serializer.update({'Mentor&Course': studentCourseSerializer})
+
             log.info(f"Data accessed by {request.META['user'].role.role}")
             return Response({'response': serializer}, status=status.HTTP_200_OK)
         except (Student.DoesNotExist, StudentCourseMentor.DoesNotExist):
@@ -804,6 +812,11 @@ class MentorStudentCourse(GenericAPIView):
     permission_classes = [isAdmin]
     queryset = Performance.objects.all()
 
+    def get_weekno_and_score(self, mentor_id, course_id):
+        query = self.queryset.filter(mentor_id=mentor_id, course_id=course_id)
+        serializer = self.serializer_class(query, many=True)
+        return serializer.data
+
     def get(self, request, mentor_id, course_id):
         """
             This API is used to get the list of students according to mentor_id and course_id
@@ -812,15 +825,19 @@ class MentorStudentCourse(GenericAPIView):
             @return: List of Students
         """
         try:
-            query = self.queryset.filter(mentor_id=mentor_id, course_id=course_id)
-            serializer = self.serializer_class(query, many=True)
-
-            if not serializer.data:
+            score_list = []
+            query = StudentCourseMentor.objects.filter(mentor_id=mentor_id, course_id=course_id)
+            serializer = StudentlistSerializers(query, many=True)
+            score = self.get_weekno_and_score(mentor_id=mentor_id, course_id=course_id)
+            score_list.append(serializer.data)
+            score_list.append({'score by week': score})
+            if not serializer:
                 log.error('serializer data is empty, from get_MentorStudentCourse()')
                 return Response({'response': 'Records not found, check mentor_id/Course_id..!!'},
                                 status=status.HTTP_404_NOT_FOUND)
             log.info("Fetched List of Students according to Mentor_id and Course_id, from get_MentorStudentCourse() ")
-            return Response({'response': serializer.data}, status=status.HTTP_200_OK)
+            return Response({'response': score_list}, status=status.HTTP_200_OK)
+
         except Exception as e:
             log.error(e, "from get_MentorStudentCourse()")
             return Response("Something went wrong", status=status.HTTP_400_BAD_REQUEST)
