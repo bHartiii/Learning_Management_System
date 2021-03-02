@@ -222,7 +222,7 @@ class MentorCourseSerializer(serializers.ModelSerializer):
 
 class GetMentorCourseDetailsSerializer(serializers.ModelSerializer):
     """
-        This serailizer is used to get mentor-course details
+        This serailizer is used to get mentor-course details for student profile
     """
     mentor = serializers.StringRelatedField(read_only=True)
     course = serializers.StringRelatedField(read_only=True)

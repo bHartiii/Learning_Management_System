@@ -851,7 +851,6 @@ class Studentprofile(GenericAPIView):
     serializer_class = StudentSerializer
     permission_classes = [AllowAny]
     queryset = Student.objects.all()
-    queryset1=Education.objects.all()
     def get(self, request, student_id):
         """
         This function will show the profile data of students
@@ -871,16 +870,16 @@ class Studentprofile(GenericAPIView):
             serializer = dict(self.serializer_class(student).data)
             userSerializer = UserSerializer(student.student).data
             serializer.update({'USER_DATA': userSerializer})
-            query = self.queryset1.filter(student_id=student_id)
+            query = Education.objects.filter(student_id=student.id)
             EducationDetails = EducationSerializer(query, many=True).data
             serializer.update({'Education_Details': EducationDetails})
-            student = StudentCourseMentor.objects.get(student_id=student.id)
-            studentCourseSerializer = GetMentorCourseDetailsSerializer(student).data
+            student = StudentCourseMentor.objects.filter(student_id=student.id)
+            studentCourseSerializer = GetMentorCourseDetailsSerializer(student, many=True).data
             serializer.update({'Mentor&Course': studentCourseSerializer})
 
             log.info(f"Data accessed by {request.META['user'].role.role}")
             return Response({'response': serializer}, status=status.HTTP_200_OK)
-        except (Student.DoesNotExist, StudentCourseMentor.DoesNotExist) as e:
+        except (Student.DoesNotExist) as e:
             log.error(e)
             return Response({'response': 'Record not found'}, status=status.HTTP_404_NOT_FOUND)
 
