@@ -27,8 +27,8 @@ class CourseMentorSerializer(serializers.ModelSerializer):
     """
     class Meta:
         model = Mentor
-        fields = ['mid', 'mentor', 'course']
-        extra_kwargs = {'mid': {'read_only': True}, 'mentor': {'read_only': True}}
+        fields = ['mid', 'user', 'course']
+        extra_kwargs = {'mid': {'read_only': True}, 'user': {'read_only': True}}
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -271,10 +271,10 @@ class MentorStudentCourseSerializer(serializers.Serializer):
 
     class Meta:
         model = Performance
+        fields = ['week_no', 'score']
 
 
 class StudentlistSerializers(serializers.ModelSerializer):
-    id = serializers.StringRelatedField(read_only=True)
     student = serializers.StringRelatedField(read_only=True)
     student_id = serializers.StringRelatedField(read_only=True)
     mentor = serializers.StringRelatedField(read_only=True)

@@ -184,7 +184,7 @@ class MentorDetailsAPIView(GenericAPIView):
         try:
             mentor = Mentor.objects.get(id=mentor_id)
             mentorSerializerDict = dict(MentorCourseSerializer(mentor).data)
-            userSerializer = UserSerializer(mentor.mentor)
+            userSerializer = UserSerializer(mentor.user)
             mentorSerializerDict.update(userSerializer.data)
             log.info("Mentor profile fetched.")
             return Response({'response': mentorSerializerDict}, status=status.HTTP_200_OK)
@@ -267,7 +267,7 @@ class StudentCourseMentorUpdateAPIView(GenericAPIView):
             course = serializer.validated_data.get('course')
             if student.course_id == course.id:
                 return Response({
-                    'response': f"{course.course_name} is already assigned to {student.user.get_full_name()}."
+                    'response': f"{course.course_name} is already assigned to {student.student.user.get_full_name()}."
                                 f" Choose different one"}, status=status.HTTP_406_NOT_ACCEPTABLE)
             if mentor is None or course is None:
                 return Response({'response': "Mentor or Course can not be Null"}, status=status.HTTP_400_BAD_REQUEST)
@@ -362,7 +362,7 @@ class StudentDetailsAPIView(GenericAPIView):
             else:
                 student = self.queryset.get(id=student_id)
             serializer = dict(self.serializer_class(student).data)
-            userSerializer = UserSerializer(student.student).data
+            userSerializer = UserSerializer(student.user).data
             serializer.update(userSerializer)
             try:
                 student = StudentCourseMentor.objects.get(student_id=student.id)
@@ -705,7 +705,7 @@ class AddMentorAPIView(GenericAPIView):
             password = GeneratePassword.generate_password(self)
             user = User.objects.create_user(username=email, first_name=first_name, last_name=last_name, email=email,
                                             password=password, mobile=mobile, role=Roles.objects.get(role='mentor'))
-            mentor = Mentor.objects.get(mentor=user)
+            mentor = Mentor.objects.get(user=user)
             data = {
                 'name': user.get_full_name(),
                 'username': user.username,
@@ -815,10 +815,8 @@ class AddStudent(GenericAPIView):
                     user = User.objects.create_user(username=email, first_name=first_name, last_name=last_name,
                                                     email=email, mobile=mobile, role=Roles.objects.get(role='student'),
                                                     password=password)
-                    StudentCourseMentor.objects.create(student=Student.objects.get(student=user),
-                                                       course=course,
-                                                       mentor=Mentor.objects.get(
-                                                           mentor=User.objects.get(mentor=mentor)))
+                    StudentCourseMentor.objects.create(student=Student.objects.get(user=user), course=course,
+                                                       mentor=mentor)
                     data = {
                         'name': user.get_full_name(),
                         'username': user.username,
@@ -885,12 +883,12 @@ class MentorStudentCourse(GenericAPIView):
     """
     This API is used to get list of student according to mentor_id and course_id
     """
-    serializer_class = MentorStudentCourseSerializer
+    serializer_class = StudentlistSerializers
     permission_classes = [isAdmin]
-    queryset = Performance.objects.all()
+    queryset = StudentCourseMentor.objects.all()
 
     def get_weekno_and_score(self, mentor_id, course_id):
-        queries = self.queryset.filter(mentor_id=mentor_id, course_id=course_id)
+        queries = Performance.objects.filter(mentor_id=mentor_id, course_id=course_id)
         score_list = []
         for query in queries:
             if query.score != None:
@@ -905,10 +903,11 @@ class MentorStudentCourse(GenericAPIView):
             @return: List of Students
         """
         try:
-            query = StudentCourseMentor.objects.get(mentor_id=mentor_id, course_id=course_id)
-            serializer = dict(StudentlistSerializers(query).data)
-            scores = self.get_weekno_and_score(mentor_id=mentor_id, course_id=course_id)
-            serializer.update({"scores":scores})
+            student_list = self.queryset.filter(mentor_id=mentor_id, course_id=course_id)
+            for student in student_list:
+                serializer = dict(self.serializer_class(student).data)
+                scores = self.get_weekno_and_score(mentor_id=mentor_id, course_id=course_id)
+                serializer.update({"scores":scores})
             if not serializer:
                 log.error('serializer data is empty, from get_MentorStudentCourse()')
                 return Response({'response': 'Records not found, check mentor_id/Course_id..!!'},
@@ -918,4 +917,4 @@ class MentorStudentCourse(GenericAPIView):
 
         except Exception as e:
             log.error(e, "from get_MentorStudentCourse()")
-            return Response("Something went wrong", status=status.HTTP_400_BAD_REQUEST)
+            return Response({"response":"Something went wrong"}, status=status.HTTP_400_BAD_REQUEST)
