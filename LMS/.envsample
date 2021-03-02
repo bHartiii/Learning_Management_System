@@ -12,5 +12,5 @@ export MAILPASSWORD=
 export REDISHOST=
 export REDISPORT=
 export REDIS_PASSWORD=
-export CELERY_BROKER_URL=
-export CELERY_RESULT_BACKEND=
+export CELERY_BROKER_URL= 'redis://:password@localhost:6379'
+export CELERY_RESULT_BACKEND= 'redis://:password@localhost:6379'

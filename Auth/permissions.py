@@ -3,12 +3,16 @@ import enum
 
 from Auth.models import Roles
 
+SAFE_METHODS = ['GET', 'HEAD', 'OPTIONS']
+
 class isAdmin(permissions.BasePermission):
     message = {'response': 'You are not an admin. Access Denied!'}
 
     def has_permission(self, request, view):
-        """ This function is used for Admin permission"""
-        return request.META['user'].role == Roles.objects.get(role='admin') or request.META['user'].is_superuser
+        if request.method in SAFE_METHODS:
+            return request.META['user'].role == Roles.objects.get(role='mentor') or request.META['user'].role == Roles.objects.get(role='admin')
+        else:
+            return request.META['user'].role == Roles.objects.get(role='admin') or request.META['user'].is_superuser
 
 
 class isMentorOrAdmin(permissions.BasePermission):

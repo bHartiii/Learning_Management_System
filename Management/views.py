@@ -3,13 +3,9 @@ from django.db import IntegrityError
 from rest_framework import authentication, status, generics, viewsets
 from rest_framework.response import Response
 from Auth.tasks import send_registration_mail
-from Auth.JWTAuthentication import JWTAuth
-from Auth.models import User, Roles
-from .models import Course, Mentor, StudentCourseMentor, Student, Education, Performance
 from django.utils.decorators import method_decorator
 from rest_framework.generics import GenericAPIView
 from rest_framework.permissions import AllowAny
-from .serializer import *
 import pandas
 from .utils import ExcelHeader, ValueRange, Pattern, Configure
 from .excel_validator import ExcelException, ExcelValidator
@@ -893,6 +889,14 @@ class MentorStudentCourse(GenericAPIView):
     permission_classes = [isAdmin]
     queryset = Performance.objects.all()
 
+    def get_weekno_and_score(self, mentor_id, course_id):
+        queries = self.queryset.filter(mentor_id=mentor_id, course_id=course_id)
+        score_list = []
+        for query in queries:
+            if query.score != None:
+                score_list.append({"week_no": query.week_no, "score": query.score})
+        return score_list
+
     def get(self, request, mentor_id, course_id):
         """
             This API is used to get the list of students according to mentor_id and course_id
@@ -901,15 +905,17 @@ class MentorStudentCourse(GenericAPIView):
             @return: List of Students
         """
         try:
-            query = self.queryset.filter(mentor_id=mentor_id, course_id=course_id)
-            serializer = self.serializer_class(query, many=True)
-
-            if not serializer.data:
+            query = StudentCourseMentor.objects.get(mentor_id=mentor_id, course_id=course_id)
+            serializer = dict(StudentlistSerializers(query).data)
+            scores = self.get_weekno_and_score(mentor_id=mentor_id, course_id=course_id)
+            serializer.update({"scores":scores})
+            if not serializer:
                 log.error('serializer data is empty, from get_MentorStudentCourse()')
                 return Response({'response': 'Records not found, check mentor_id/Course_id..!!'},
                                 status=status.HTTP_404_NOT_FOUND)
             log.info("Fetched List of Students according to Mentor_id and Course_id, from get_MentorStudentCourse() ")
-            return Response({'response': serializer.data}, status=status.HTTP_200_OK)
+            return Response({'response': serializer}, status=status.HTTP_200_OK)
+
         except Exception as e:
             log.error(e, "from get_MentorStudentCourse()")
             return Response("Something went wrong", status=status.HTTP_400_BAD_REQUEST)

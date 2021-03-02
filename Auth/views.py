@@ -24,9 +24,11 @@ from drf_yasg import openapi
 from LMS.mailConfirmation import Email
 
 
+@method_decorator(TokenAuthentication, name='dispatch')
 class AddRoleAPIView(GenericAPIView):
     """ This API is used for adding role """
     serializer_class = RoleSerializer
+    permission_classes = (isAdmin,)
     queryset = Roles.objects.all()
 
     def get(self, request):

@@ -48,7 +48,7 @@ class CantAccessAfterLogin(object):
             pass
 
         if cache_token:
-            cache_token = cache_token.decode('utf-8')    
+            cache_token = cache_token.decode('utf-8')
         if jwtData and cache_token == token:
             return JsonResponse({'response': 'You need to logout to access this this resource'},
                                 status=status.HTTP_406_NOT_ACCEPTABLE)
