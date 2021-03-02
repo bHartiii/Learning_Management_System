@@ -154,5 +154,5 @@ REDIS_PASSWORD = os.environ.get('REDIS_PASSWORD')
 
 
 # celery backend configuration
-CELERY_BROKER_URL = 'redis://:' + REDIS_PASSWORD + '@localhost:6379'
-CELERY_RESULT_BACKEND = 'redis://:' + REDIS_PASSWORD + '@localhost:6379'
+CELERY_BROKER_URL = os.environ.get('CELERY_BROKER_URL')
+CELERY_RESULT_BACKEND = os.environ.get('CELERY_RESULT_BACKEND')
