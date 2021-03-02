@@ -889,7 +889,6 @@ class MentorStudentCourse(GenericAPIView):
         queries = self.queryset.filter(mentor_id=mentor_id, course_id=course_id, student_id=student_id)
         score_list = []
         for query in queries:
-            print(query.score)
             if query.score != None:
                 score_list.append({"week_no": query.week_no, "score": query.score})
         return score_list
