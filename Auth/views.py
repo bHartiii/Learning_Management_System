@@ -25,11 +25,14 @@ from LMS.cache import Cache
 import datetime
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
+from LMS.mailConfirmation import Email
 
 
+@method_decorator(TokenAuthentication, name='dispatch')
 class AddRoleAPIView(GenericAPIView):
     """ This API is used for adding role """
     serializer_class = RoleSerializer
+    permission_classes = (isAdmin,)
     queryset = Roles.objects.all()
 
     def get(self, request):
@@ -205,10 +208,11 @@ class ForgotPasswordView(GenericAPIView):
 class ResetPasswordView(GenericAPIView):
     serializer_class = ResetPasswordSerializer
 
-    def put(self, request, token):
+    def put(self, request):
         """This API is used to reset the user password after validating jwt token and its payload
         @param token: jwt token
         """
+        token = request.GET.get('token')
         try:
             blacklist_token = TokenBlackList.objects.get(token=token)
         except TokenBlackList.DoesNotExist:
