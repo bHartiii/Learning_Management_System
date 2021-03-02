@@ -237,7 +237,8 @@ class StudentProfileDetails(serializers.ModelSerializer):
                   'year_of_experience', 'current_location', 'current_address']
 
 
-class UserSerializer(serializers.ModelSerializer):
+class UserSerializer1(serializers.ModelSerializer):
+
     class Meta:
         model = User
         fields = ['email', 'mobile']
@@ -257,7 +258,7 @@ class CourseMentorSerializers(serializers.ModelSerializer):
 class EducationSerializer1(serializers.ModelSerializer):
     class Meta:
         model = Education
-        fields = ['degree', 'stream', 'percentage', 'from_date', 'till']
+        fields = ['institute','degree', 'stream', 'percentage', 'from_date', 'till']
 
     def validate(self, data):
         data['student_id'] = self.context['student']  # storing logged in student id and returning with data
