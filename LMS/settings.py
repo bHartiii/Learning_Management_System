@@ -146,8 +146,11 @@ EMAIL_HOST_PASSWORD = os.environ.get('MAILPASSWORD')
 
 # celery backend configuration
 
-CELERY_RESULT_BACKEND = 'django-db'
-CELERY_CACHE_BACKEND = 'django-cache'
+#CELERY_RESULT_BACKEND = 'django-db'
+#CELERY_CACHE_BACKEND = 'django-cache'
+
+CELERY_BROKER_URL = 'redis://:Xsdwerrdf@localhost:6379'
+CELERY_RESULT_BACKEND = 'redis://:Xsdwerrdf@localhost:6379'
 
 SWAGGER_SETTINGS = {
     'SECURITY_DEFINITIONS': {
@@ -161,3 +164,4 @@ SWAGGER_SETTINGS = {
 
 REDIS_HOST = os.environ.get('REDISHOST')
 REDIS_PORT = os.environ.get('REDISPORT')
+REDIS_PASSWORD = os.environ.get('REDIS_PASSWORD')
