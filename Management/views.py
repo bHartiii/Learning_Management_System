@@ -602,7 +602,7 @@ class StudentPerfromanceUpdate(GenericAPIView):
             log.info('Records not found')
             return Response({'response': 'Records not found'}, status=status.HTTP_404_NOT_FOUND)
         return Response(
-            {'response': f"Score updated for {student.student.student.get_full_name()}'s week {week_no} review"},
+            {'response': f"Score updated for {student.student.user.get_full_name()}'s week {week_no} review"},
             status=status.HTTP_200_OK)
 
 

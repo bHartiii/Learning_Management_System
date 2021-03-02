@@ -17,9 +17,9 @@ def create_student_or_mentor(sender, instance, created, **kwargs):
         if instance.role == Roles.objects.get(role='admin'):
             pass
         elif instance.role == Roles.objects.get(role='student'):
-            Student.objects.create(student=instance)
+            Student.objects.create(user=instance)
         elif instance.role == Roles.objects.get(role='mentor'):
-            Mentor.objects.create(mentor=instance)
+            Mentor.objects.create(user=instance)
 
 
 @receiver(signal=post_save, sender=StudentCourseMentor)
@@ -37,12 +37,12 @@ def create_performace_record(sender, instance, created, **kwargs):
 def notify_student_about_review_result(sender, instance, created, **kwargs):
     if not created:
         data = {
-            'name': instance.student.student.get_full_name(),
-            'email': instance.student.student.email,
+            'name': instance.student.user.get_full_name(),
+            'email': instance.student.user.email,
             'week_no': instance.week_no,
             'score': instance.score,
             'course': instance.course.course_name,
-            'mentor': instance.mentor.mentor.get_full_name(),
+            'mentor': instance.mentor.user.get_full_name(),
             'remark': instance.remark
         }
         send_review_result_notification_mail.delay(data)
