@@ -864,7 +864,7 @@ class Studentprofile(GenericAPIView):
             else:
                 student = self.queryset.get(id=student_id)
             serializer = dict(self.serializer_class(student).data)
-            userSerializer = UserSerializer(student.student).data
+            userSerializer = UserSerializer(student.user).data
             serializer.update({'USER_DATA': userSerializer})
             query = Education.objects.filter(student_id=student.id)
             EducationDetails = EducationSerializer(query, many=True).data

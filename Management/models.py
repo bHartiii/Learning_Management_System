@@ -72,7 +72,7 @@ class Mentor(models.Model):
     course = models.ManyToManyField(to=Course, related_name='course_mentor')
 
     def __str__(self):
-        return self.mentor.get_full_name()
+        return self.user.get_full_name()
 
 
 class Student(models.Model):
@@ -98,7 +98,7 @@ class Student(models.Model):
     year_of_experience = models.IntegerField(choices=year_of_experience, default=None, null=True)
 
     def __str__(self):
-        return self.student.get_full_name()
+        return self.user.get_full_name()
 
 
 class Education(models.Model):
