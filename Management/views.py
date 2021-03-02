@@ -891,9 +891,12 @@ class MentorStudentCourse(GenericAPIView):
     queryset = Performance.objects.all()
 
     def get_weekno_and_score(self, mentor_id, course_id):
-        query = self.queryset.filter(mentor_id=mentor_id, course_id=course_id)
-        serializer = self.serializer_class(query, many=True)
-        return serializer.data
+        queries = self.queryset.filter(mentor_id=mentor_id, course_id=course_id)
+        score_list = []
+        for query in queries:
+            if query.score != None:
+                score_list.append({"week_no": query.week_no, "score": query.score})
+        return score_list
 
     def get(self, request, mentor_id, course_id):
         """
@@ -903,18 +906,16 @@ class MentorStudentCourse(GenericAPIView):
             @return: List of Students
         """
         try:
-            score_list = []
             query = StudentCourseMentor.objects.get(mentor_id=mentor_id, course_id=course_id)
-            serializer = StudentlistSerializers(query)
-            score = self.get_weekno_and_score(mentor_id=mentor_id, course_id=course_id)
-            score_list.append(serializer.data)
-            score_list.append({'score_by_week': score})
+            serializer = dict(StudentlistSerializers(query).data)
+            scores = self.get_weekno_and_score(mentor_id=mentor_id, course_id=course_id)
+            serializer.update({"scores":scores})
             if not serializer:
                 log.error('serializer data is empty, from get_MentorStudentCourse()')
                 return Response({'response': 'Records not found, check mentor_id/Course_id..!!'},
                                 status=status.HTTP_404_NOT_FOUND)
             log.info("Fetched List of Students according to Mentor_id and Course_id, from get_MentorStudentCourse() ")
-            return Response({'response': score_list}, status=status.HTTP_200_OK)
+            return Response({'response': serializer}, status=status.HTTP_200_OK)
 
         except Exception as e:
             log.error(e, "from get_MentorStudentCourse()")
