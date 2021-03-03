@@ -66,13 +66,13 @@ class Mentor(models.Model):
     """
     This is mentor model for mapping course to mentor
     """
-    mentor = models.OneToOneField(User, on_delete=models.CASCADE)
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
     image = models.ImageField(upload_to='mentor/', max_length=255, null=True, blank=True)
     mid = models.CharField(max_length=10, unique=True, default=get_mentor_id)
     course = models.ManyToManyField(to=Course, related_name='course_mentor')
 
     def __str__(self):
-        return self.mentor.get_full_name()
+        return self.user.get_full_name()
 
 
 class Student(models.Model):
@@ -87,7 +87,7 @@ class Student(models.Model):
         (4, 4),
         (5, 5),
     )
-    student = models.OneToOneField(User, on_delete=models.CASCADE)
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
     image = models.ImageField(upload_to='student/', max_length=255, null=True, blank=True)
     sid = models.CharField(max_length=10, unique=True, default=get_student_id)
     alt_number = models.CharField(max_length=13, default=None, null=True, blank=True)
@@ -98,7 +98,7 @@ class Student(models.Model):
     year_of_experience = models.IntegerField(choices=year_of_experience, default=None, null=True)
 
     def __str__(self):
-        return self.student.get_full_name()
+        return self.user.get_full_name()
 
 
 class Education(models.Model):

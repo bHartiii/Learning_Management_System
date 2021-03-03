@@ -184,7 +184,7 @@ class MentorDetailsAPIView(GenericAPIView):
         try:
             mentor = Mentor.objects.get(id=mentor_id)
             mentorSerializerDict = dict(MentorCourseSerializer(mentor).data)
-            userSerializer = UserSerializer(mentor.mentor)
+            userSerializer = UserSerializer(mentor.user)
             mentorSerializerDict.update(userSerializer.data)
             log.info("Mentor profile fetched.")
             return Response({'response': mentorSerializerDict}, status=status.HTTP_200_OK)
@@ -267,7 +267,7 @@ class StudentCourseMentorUpdateAPIView(GenericAPIView):
             course = serializer.validated_data.get('course')
             if student.course_id == course.id:
                 return Response({
-                    'response': f"{course.course_name} is already assigned to {student.student.student.get_full_name()}."
+                    'response': f"{course.course_name} is already assigned to {student.student.user.get_full_name()}."
                                 f" Choose different one"}, status=status.HTTP_406_NOT_ACCEPTABLE)
             if mentor is None or course is None:
                 return Response({'response': "Mentor or Course can not be Null"}, status=status.HTTP_400_BAD_REQUEST)
@@ -275,7 +275,7 @@ class StudentCourseMentorUpdateAPIView(GenericAPIView):
                 serializer.save()
                 log.info('record updated')
                 return Response({'response': "Record updated"}, status=status.HTTP_200_OK)
-            return Response({'response:': f"{course.course_name} is not in {mentor.mentor.get_full_name()}'s bucket"},
+            return Response({'response:': f"{course.course_name} is not in {mentor.user.get_full_name()}'s bucket"},
                             status=status.HTTP_404_NOT_FOUND)
         except StudentCourseMentor.DoesNotExist:
             log.info("record id not found")
@@ -323,9 +323,9 @@ class StudentsAPIView(GenericAPIView):
          and student can see his own record
         """
         if request.META['user'].role == Roles.objects.get(role='mentor'):
-            query = StudentCourseMentor.objects.filter(mentor=Mentor.objects.get(mentor_id=request.META['user']))
+            query = StudentCourseMentor.objects.filter(mentor=Mentor.objects.get(user=request.META['user']))
         elif request.META['user'].role == Roles.objects.get(role='student'):
-            student = Student.objects.get(student_id=request.META['user'])
+            student = Student.objects.get(user=request.META['user'])
             query = StudentCourseMentor.objects.filter(student=student)
         else:
             query = self.queryset.all()
@@ -355,14 +355,14 @@ class StudentDetailsAPIView(GenericAPIView):
         """
         try:
             if request.META['user'].role == Roles.objects.get(role='student'):
-                student = Student.objects.get(student_id=request.META['user'])
+                student = Student.objects.get(user=request.META['user'])
             elif request.META['user'].role == Roles.objects.get(role='mentor'):
-                student = StudentCourseMentor.objects.get(mentor=Mentor.objects.get(mentor_id=request.META['user']),
+                student = StudentCourseMentor.objects.get(mentor=Mentor.objects.get(user=request.META['user']),
                                                           student_id=student_id).student
             else:
                 student = self.queryset.get(id=student_id)
             serializer = dict(self.serializer_class(student).data)
-            userSerializer = UserSerializer(student.student).data
+            userSerializer = UserSerializer(student.user).data
             serializer.update(userSerializer)
             try:
                 student = StudentCourseMentor.objects.get(student_id=student.id)
@@ -390,7 +390,7 @@ class StudentsDetailsUpdateAPIView(GenericAPIView):
         """This API is used to update student basic details
         """
         try:
-            student = Student.objects.get(student_id=request.META['user'])
+            student = Student.objects.get(user=request.META['user'])
             serializer = self.serializer_class(instance=student, data=request.data)
             serializer.is_valid(raise_exception=True)
         except Student.DoesNotExist:
@@ -419,11 +419,11 @@ class EducationDetails(GenericAPIView):
         """
         try:
             if request.META['user'].role == Roles.objects.get(role='student'):
-                student = Student.objects.get(student_id=request.META['user'].id)
-                query = self.queryset.filter(student_id=student.id)
+                student = Student.objects.get(user=request.META['user'])
+                query = self.queryset.filter(student=student)
             elif request.META['user'].role == Roles.objects.get(role='mentor'):
-                mentor = Mentor.objects.get(mentor_id=request.META['user'].id)
-                query = self.queryset.filter(mentor_id=mentor, student_id=student_id)
+                mentor = Mentor.objects.get(user=request.META['user'])
+                query = self.queryset.filter(mentor=mentor, student_id=student_id)
             else:
                 query = self.queryset.filter(student_id=student_id)
 
@@ -450,11 +450,11 @@ class EducationDetailsAdd(GenericAPIView):
         """This API is used to add Education details of student. This API is accessible to student only
         """
         try:
-            student = Student.objects.get(student_id=request.META['user'].id)
+            student = Student.objects.get(user=request.META['user'])
             serializer = self.serializer_class(data=request.data, context={'student': student.id})
             serializer.is_valid(raise_exception=True)
             degree = serializer.validated_data.get('degree')
-            Education.objects.get(student_id=student.id, degree=degree)
+            Education.objects.get(student=student, degree=degree)
             log.info('data is already present in database')
             return Response({'response': f"{degree} data is already saved"}, status=status.HTTP_208_ALREADY_REPORTED)
         except Education.DoesNotExist:
@@ -484,7 +484,7 @@ class EducationDetailsUpdate(GenericAPIView):
          @return: updates existing education record
         """
         try:
-            student = Student.objects.get(student_id=request.META['user'].id)
+            student = Student.objects.get(user=request.META['user'])
             record = self.queryset.get(id=record_id, student_id=student.id)
             serializer = self.serializer_class(instance=record, data=request.data, partial=True)
             serializer.is_valid(raise_exception=True)
@@ -516,7 +516,7 @@ class NotMappedStudents(GenericAPIView):
                 mapped_student.append(student.student)
             for student in self.queryset.all():
                 if not student in mapped_student:
-                    query.append(self.queryset.get(student=User.objects.get(id=student.student_id)))
+                    query.append(self.queryset.get(user=User.objects.get(id=student.user.id)))
             serializer = self.serializer_class(query, many=True)
             if not serializer.data:
                 log.info('No records found')
@@ -525,9 +525,7 @@ class NotMappedStudents(GenericAPIView):
             return Response({'response': serializer.data}, status=status.HTTP_200_OK)
         except Exception as e:
             log.error(e)
-            return Response({'response':'Something went wrong!!!'}, status=status.HTTP_400_BAD_REQUEST)
-            
-            
+            return Response({'response': 'Something went wrong!!!'}, status=status.HTTP_400_BAD_REQUEST)
 
 
 @method_decorator(TokenAuthentication, name='dispatch')
@@ -548,10 +546,10 @@ class StudentPerformance(GenericAPIView):
         """
         try:
             if request.META['user'].role == Roles.objects.get(role='student'):
-                student = Student.objects.get(student_id=request.META['user'].id)
+                student = Student.objects.get(user=request.META['user'])
                 query = self.queryset.filter(student_id=student.id)
             elif request.META['user'].role == Roles.objects.get(role='mentor'):
-                mentor = Mentor.objects.get(mentor_id=request.META['user'].id)
+                mentor = Mentor.objects.get(user=request.META['user'])
                 query = self.queryset.filter(mentor_id=mentor.id, student_id=student_id)
             else:
                 query = self.queryset.filter(student_id=student_id)
@@ -583,7 +581,7 @@ class StudentPerfromanceUpdate(GenericAPIView):
         """
         try:
             if request.META['user'].role == Roles.objects.get(role='mentor'):
-                mentor = Mentor.objects.get(mentor_id=request.META['user'].id)
+                mentor = Mentor.objects.get(user=request.META['user'])
                 student = self.queryset.get(mentor_id=mentor.id, student_id=student_id, week_no=week_no)
             else:
                 student = self.queryset.get(student_id=student_id, week_no=week_no)
@@ -602,7 +600,7 @@ class StudentPerfromanceUpdate(GenericAPIView):
             log.info('Records not found')
             return Response({'response': 'Records not found'}, status=status.HTTP_404_NOT_FOUND)
         return Response(
-            {'response': f"Score updated for {student.student.student.get_full_name()}'s week {week_no} review"},
+            {'response': f"Score updated for {student.student.user.get_full_name()}'s week {week_no} review"},
             status=status.HTTP_200_OK)
 
 
@@ -705,7 +703,7 @@ class AddMentorAPIView(GenericAPIView):
             password = GeneratePassword.generate_password(self)
             user = User.objects.create_user(username=email, first_name=first_name, last_name=last_name, email=email,
                                             password=password, mobile=mobile, role=Roles.objects.get(role='mentor'))
-            mentor = Mentor.objects.get(mentor=user)
+            mentor = Mentor.objects.get(user=user)
             data = {
                 'name': user.get_full_name(),
                 'username': user.username,
@@ -773,7 +771,7 @@ class GetMentorDetailsAPIView(GenericAPIView):
                     log.info("Mentors retrieved")
                     return Response({'response': mentor_list}, status=status.HTTP_200_OK)
             elif request.META['user'].role == Roles.objects.get(role='mentor'):
-                mentor = Mentor.objects.get(mentor=request.META['user'])
+                mentor = Mentor.objects.get(user=request.META['user'])
                 serializer = dict(self.serializer_class(mentor).data)
                 course_list = self.get_student_count_in_course_list(mentor)
                 serializer.update({"course": course_list})
@@ -815,10 +813,8 @@ class AddStudent(GenericAPIView):
                     user = User.objects.create_user(username=email, first_name=first_name, last_name=last_name,
                                                     email=email, mobile=mobile, role=Roles.objects.get(role='student'),
                                                     password=password)
-                    StudentCourseMentor.objects.create(student=Student.objects.get(student=user),
-                                                       course=course,
-                                                       mentor=Mentor.objects.get(
-                                                           mentor=User.objects.get(mentor=mentor)))
+                    StudentCourseMentor.objects.create(student=Student.objects.get(user=user), course=course,
+                                                       mentor=mentor)
                     data = {
                         'name': user.get_full_name(),
                         'username': user.username,
@@ -847,7 +843,6 @@ class Studentprofile(GenericAPIView):
     serializer_class = StudentSerializer
     permission_classes = [AllowAny]
     queryset = Student.objects.all()
-    queryset1=Education.objects.all()
     def get(self, request, student_id):
         """
         This function will show the profile data of students
@@ -858,25 +853,25 @@ class Studentprofile(GenericAPIView):
         """
         try:
             if request.META['user'].role == Roles.objects.get(role='student'):
-                student = Student.objects.get(student_id=request.META['user'])
+                student = Student.objects.get(user=request.META['user'])
             elif request.META['user'].role == Roles.objects.get(role='mentor'):
                 student = StudentCourseMentor.objects.get(mentor=Mentor.objects.get(mentor_id=request.META['user']),
                                                           student_id=student_id).student
             else:
                 student = self.queryset.get(id=student_id)
             serializer = dict(self.serializer_class(student).data)
-            userSerializer = UserSerializer(student.student).data
+            userSerializer = UserSerializer(student.user).data
             serializer.update({'USER_DATA': userSerializer})
-            query = self.queryset1.filter(student_id=student_id)
+            query = Education.objects.filter(student_id=student.id)
             EducationDetails = EducationSerializer(query, many=True).data
             serializer.update({'Education_Details': EducationDetails})
-            student = StudentCourseMentor.objects.get(student_id=student.id)
-            studentCourseSerializer = GetMentorCourseDetailsSerializer(student).data
+            student = StudentCourseMentor.objects.filter(student_id=student.id)
+            studentCourseSerializer = GetMentorCourseDetailsSerializer(student, many=True).data
             serializer.update({'Mentor&Course': studentCourseSerializer})
 
             log.info(f"Data accessed by {request.META['user'].role.role}")
             return Response({'response': serializer}, status=status.HTTP_200_OK)
-        except (Student.DoesNotExist, StudentCourseMentor.DoesNotExist) as e:
+        except (Student.DoesNotExist) as e:
             log.error(e)
             return Response({'response': 'Record not found'}, status=status.HTTP_404_NOT_FOUND)
 
@@ -886,14 +881,17 @@ class MentorStudentCourse(GenericAPIView):
     """
     This API is used to get list of student according to mentor_id and course_id
     """
-    serializer_class = MentorStudentCourseSerializer
+    serializer_class = StudentlistSerializers
     permission_classes = [isAdmin]
     queryset = Performance.objects.all()
 
-    def get_weekno_and_score(self, mentor_id, course_id):
-        query = self.queryset.filter(mentor_id=mentor_id, course_id=course_id)
-        serializer = self.serializer_class(query, many=True)
-        return serializer.data
+    def get_weekno_and_score(self, mentor_id, course_id, student_id):
+        queries = self.queryset.filter(mentor_id=mentor_id, course_id=course_id, student_id=student_id)
+        score_list = []
+        for query in queries:
+            if query.score != None:
+                score_list.append({"week_no": query.week_no, "score": query.score})
+        return score_list
 
     def get(self, request, mentor_id, course_id):
         """
@@ -903,19 +901,20 @@ class MentorStudentCourse(GenericAPIView):
             @return: List of Students
         """
         try:
-            score_list = []
-            query = StudentCourseMentor.objects.get(mentor_id=mentor_id, course_id=course_id)
-            serializer = StudentlistSerializers(query)
-            score = self.get_weekno_and_score(mentor_id=mentor_id, course_id=course_id)
-            score_list.append(serializer.data)
-            score_list.append({'score_by_week': score})
-            if not serializer:
+            student_list = []
+            queries = StudentCourseMentor.objects.filter(mentor_id=mentor_id, course_id=course_id)
+            for queri in queries:
+                serializer = dict(StudentlistSerializers(queri).data)
+                scores = self.get_weekno_and_score(mentor_id=mentor_id, course_id=course_id, student_id=queri.student_id)
+                serializer.update({"scores": scores})
+                student_list.append(serializer)
+            if not student_list:
                 log.error('serializer data is empty, from get_MentorStudentCourse()')
                 return Response({'response': 'Records not found, check mentor_id/Course_id..!!'},
-                                status=status.HTTP_404_NOT_FOUND)
+                                    status=status.HTTP_404_NOT_FOUND)
             log.info("Fetched List of Students according to Mentor_id and Course_id, from get_MentorStudentCourse() ")
-            return Response({'response': score_list}, status=status.HTTP_200_OK)
+            return Response({'response': student_list}, status=status.HTTP_200_OK)
 
         except Exception as e:
             log.error(e, "from get_MentorStudentCourse()")
-            return Response("Something went wrong", status=status.HTTP_400_BAD_REQUEST)
+            return Response({"response":"Something went wrong"}, status=status.HTTP_400_BAD_REQUEST)

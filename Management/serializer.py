@@ -27,8 +27,8 @@ class CourseMentorSerializer(serializers.ModelSerializer):
     """
     class Meta:
         model = Mentor
-        fields = ['mid', 'mentor', 'course']
-        extra_kwargs = {'mid': {'read_only': True}, 'mentor': {'read_only': True}}
+        fields = ['mid', 'user', 'course']
+        extra_kwargs = {'mid': {'read_only': True}, 'user': {'read_only': True}}
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -87,11 +87,11 @@ class StudentSerializer(serializers.ModelSerializer):
     """
         This serializer is used to get all student basic details from student model
     """
-    student = serializers.StringRelatedField(read_only=True)
+    user = serializers.StringRelatedField(read_only=True)
 
     class Meta:
         model = Student
-        fields = ['id', 'student', 'student_id', 'sid', 'alt_number', 'relation_with_alt_number_holder',
+        fields = ['id', 'user', 'user_id', 'sid', 'alt_number', 'relation_with_alt_number_holder',
                   'current_location',
                   'current_address', 'git_link', 'year_of_experience']
 
@@ -100,18 +100,18 @@ class StudentBasicSerializer(serializers.ModelSerializer):
     """
         This serializer is used to get student id and name of a student
     """
-    student = serializers.StringRelatedField(read_only=True)
+    user = serializers.StringRelatedField(read_only=True)
 
     class Meta:
         model = Student
-        fields = ['id', 'student_id', 'student']
+        fields = ['id', 'user_id', 'user']
 
 
 class StudentDetailsSerializer(serializers.ModelSerializer):
     """
         This serializer is used to update student basic details
     """
-    student = serializers.StringRelatedField(read_only=True)
+    user = serializers.StringRelatedField(read_only=True)
     alt_number = serializers.RegexField("^[7-9]{1}[0-9]{9}$")
     relation_with_alt_number_holder = serializers.CharField(read_only=True, max_length=10)
     current_location = serializers.CharField(min_length=3, max_length=30, required=True)
@@ -121,7 +121,7 @@ class StudentDetailsSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Student
-        fields = ['id', 'student', 'alt_number', 'relation_with_alt_number_holder', 'current_location',
+        fields = ['id', 'user', 'user_id', 'alt_number', 'relation_with_alt_number_holder', 'current_location',
                   'current_address', 'git_link', 'year_of_experience']
 
     def validate(self, data):
@@ -216,23 +216,23 @@ class MentorCourseSerializer(serializers.ModelSerializer):
     """
         This serailizer is used to get mentor-course details
     """
-    mentor = serializers.StringRelatedField(read_only=True)
+    user = serializers.StringRelatedField(read_only=True)
     course = serializers.StringRelatedField(read_only=True, many=True)
 
     class Meta:
         model = Mentor
-        fields = ['id', 'image', 'mentor_id', 'mid', 'mentor', 'course']
+        fields = ['id', 'image', 'user_id', 'mid', 'user', 'course']
 
 class GetMentorCourseDetailsSerializer(serializers.ModelSerializer):
     """
-        This serailizer is used to get mentor-course details
+        This serailizer is used to get mentor-course details for student profile
     """
-    mentor = serializers.StringRelatedField(read_only=True)
+    user = serializers.StringRelatedField(read_only=True)
     course = serializers.StringRelatedField(read_only=True)
 
     class Meta:
         model = Mentor
-        fields = ['id','image', 'mentor_id', 'mid', 'mentor', 'course']
+        fields = ['id','image', 'user_id', 'mid', 'user', 'course']
 
 
 class AddStudentSerializer(serializers.ModelSerializer):
@@ -271,10 +271,10 @@ class MentorStudentCourseSerializer(serializers.Serializer):
 
     class Meta:
         model = Performance
+        fields = ['week_no', 'score']
 
 
 class StudentlistSerializers(serializers.ModelSerializer):
-    id = serializers.StringRelatedField(read_only=True)
     student = serializers.StringRelatedField(read_only=True)
     student_id = serializers.StringRelatedField(read_only=True)
     mentor = serializers.StringRelatedField(read_only=True)
